@@ -194,7 +194,7 @@ fun ShowTablePlay(
                     val turned = tablePlay.cardsArray[x][y].value.turned
                     Image(
                         painter = if (!turned)
-                            painterResource(id = R.drawable.retrocarta_2_small)
+                            painterResource(id = R.drawable.card_back)
                         else painterResource(
                             gameCardImages[
                                 tablePlay.cardsArray[x][y].value.id
@@ -263,7 +263,7 @@ fun Tail(
 @Composable
 fun BackgroudImg(modifier: Modifier = Modifier) {
     Image(
-        painter = painterResource(id = R.drawable.background),
+        painter = painterResource(id = R.drawable.background_00),
         contentDescription = null,
         alpha = 0.5f,
         contentScale = ContentScale.Crop,
@@ -309,7 +309,7 @@ fun PauseDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Image(
-                    painter = painterResource(R.drawable.pausecard),
+                    painter = painterResource(R.drawable.card_pause),
                     contentDescription = "PAUSE",
                     contentScale = ContentScale.Fit,
                     //modifier = Modifier
@@ -357,7 +357,7 @@ fun ResetDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Image(
-                    painter = painterResource(R.drawable.resetcard),
+                    painter = painterResource(R.drawable.card_reset),
                     contentDescription = "PAUSE",
                     contentScale = ContentScale.Fit,
                 )
@@ -444,7 +444,7 @@ fun GameWonDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Image(
-                    painter = painterResource(R.drawable.carta_win),
+                    painter = painterResource(R.drawable.card_win),
                     contentDescription = "COMPLETED",
                     contentScale = ContentScale.Fit
                 )
@@ -490,7 +490,7 @@ fun Testing(
     {
 
         Image(
-            painter = painterResource(id = R.drawable.background),
+            painter = painterResource(id = R.drawable.background_00),
             contentDescription = null,
             alpha = 0.7f,
             contentScale = ContentScale.Crop,
@@ -501,7 +501,7 @@ fun Testing(
             Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
             {
                 Image(
-                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    painter = painterResource(id = R.drawable.card_back),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds
                 )
@@ -512,7 +512,7 @@ fun Testing(
                 Image(
                     //painter = painterResource(id = R.drawable.retrocarta_2_small),
                     //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
-                    painter = if (tablePlay.cardsArray[0][1].value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (tablePlay.cardsArray[0][1].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {
@@ -529,7 +529,7 @@ fun Testing(
                 Image(
                     //painter = painterResource(id = R.drawable.retrocarta_2_small),
                     //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
-                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {
@@ -572,7 +572,7 @@ fun TestingDelayUsingList(
     {
 
         Image(
-            painter = painterResource(id = R.drawable.background),
+            painter = painterResource(id = R.drawable.background_00),
             contentDescription = null,
             alpha = 0.7f,
             contentScale = ContentScale.Crop,
@@ -583,7 +583,7 @@ fun TestingDelayUsingList(
             Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
             {
                 Image(
-                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    painter = painterResource(id = R.drawable.card_back),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds
                 )
@@ -594,7 +594,7 @@ fun TestingDelayUsingList(
                 Image(
                     //painter = painterResource(id = R.drawable.retrocarta_2_small),
                     //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
-                    painter = if (testValue.value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (testValue.value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {
@@ -609,7 +609,7 @@ fun TestingDelayUsingList(
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
-                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {

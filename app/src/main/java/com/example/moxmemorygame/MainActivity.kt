@@ -77,7 +77,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     {
 
         Image(
-            painter = painterResource(id = R.drawable.background),
+            painter = painterResource(id = R.drawable.background_00),
             contentDescription = null,
             alpha = 0.7f,
             contentScale = ContentScale.Crop,
@@ -88,7 +88,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
             {
                 Image(
-                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    painter = painterResource(id = R.drawable.card_back),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds
                 )
@@ -97,7 +97,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
-                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    painter = painterResource(id = R.drawable.card_back),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds
                 )
@@ -106,7 +106,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
-                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    painter = painterResource(id = R.drawable.card_back),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                 )

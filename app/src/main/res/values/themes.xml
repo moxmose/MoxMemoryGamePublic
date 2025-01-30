@@ -4,7 +4,7 @@
         <!-- Set the splash screen background, animated icon, and animation duration. -->
         <item name="windowSplashScreenBackground">@android:color/transparent</item>
         <!-- Use windowSplashScreenAnimatedIcon to add a drawable or an animated drawable. One of these is required. -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/play_store_512</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/loading_image</item>
         <!-- Required for animated icons. -->
         <!--
         <item name="windowSplashScreenAnimationDuration">200</item>
