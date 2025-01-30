@@ -79,12 +79,12 @@ fun MainApp(
     val gamePaused = appViewModel.gamePaused.value
     val gameResetRequest = appViewModel.gameResetRequest.value
     val gameWon = appViewModel.gameWon.value
-    val score = appViewModel.score.value
-    val moves = appViewModel.moves.value
+    val score = appViewModel.score.intValue
+    val moves = appViewModel.moves.intValue
     val timeGame by appViewModel.simpleTimer.collectAsState()
     val timeGameString = timeGame.formatSimpleTime()
 
-    BackgroudImg()
+    BackgroundImg()
     Column(modifier = modifier) {
         Head(
             score = score,
@@ -144,13 +144,13 @@ fun Head(
     ) {
         Row {
             Text(
-                text = "Score : " + score,
+                text = "Score : $score",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Moves: " + moves,
+                text = "Moves: $moves",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -158,7 +158,7 @@ fun Head(
         }
         Row {
             Text(
-                text = "Time: " + timeGame,
+                text = "Time: $timeGame",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -261,7 +261,7 @@ fun Tail(
  * Set background
  */
 @Composable
-fun BackgroudImg(modifier: Modifier = Modifier) {
+fun BackgroundImg(modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(id = R.drawable.background_00),
         contentDescription = null,
@@ -485,7 +485,6 @@ fun Testing(
     val screenHeightPx = (configuration.screenHeightDp.toFloat() * screenDensity).toInt()
     val screenWidthPx = (configuration.screenWidthDp.toFloat() * screenDensity).toInt()
 
-    //Image(imageVector = ImageVector.vectorResource(id = R.drawable.retrocarta_2_small), contentDescription = null)
     Box()
     {
 
@@ -510,8 +509,6 @@ fun Testing(
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
-                    //painter = painterResource(id = R.drawable.retrocarta_2_small),
-                    //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
                     painter = if (tablePlay.cardsArray[0][1].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
@@ -523,12 +520,10 @@ fun Testing(
 
             }
             // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
-            Text(text = "${tablePlay.cardsArray[0][1].value.turned.toString()}")
+            Text(text = tablePlay.cardsArray[0][1].value.turned.toString())
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
-                    //painter = painterResource(id = R.drawable.retrocarta_2_small),
-                    //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
                     painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
@@ -540,7 +535,7 @@ fun Testing(
 
             }
            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
-            Text(text = "${tablePlay.cardsArray[0][0].value.turned.toString()}")
+            Text(text = tablePlay.cardsArray[0][0].value.turned.toString())
         }
     }
 }
@@ -567,7 +562,6 @@ fun TestingDelayUsingList(
     val screenHeightPx = (configuration.screenHeightDp.toFloat() * screenDensity).toInt()
     val screenWidthPx = (configuration.screenWidthDp.toFloat() * screenDensity).toInt()
 
-    //Image(imageVector = ImageVector.vectorResource(id = R.drawable.retrocarta_2_small), contentDescription = null)
     Box()
     {
 
@@ -592,8 +586,6 @@ fun TestingDelayUsingList(
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
-                    //painter = painterResource(id = R.drawable.retrocarta_2_small),
-                    //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
                     painter = if (testValue.value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
@@ -605,7 +597,7 @@ fun TestingDelayUsingList(
 
             }
             // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
-            Text(text = "${tablePlay.cardsArray[0][1].value.turned.toString()}")
+            Text(text = tablePlay.cardsArray[0][1].value.turned.toString())
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
                 Image(
@@ -619,7 +611,7 @@ fun TestingDelayUsingList(
 
             }
             // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
-            Text(text = "${tablePlay.cardsArray[0][0].value.turned.toString()}")
+            Text(text = "${tablePlay.cardsArray[0][0].value.turned}")
         }
     }
 }
@@ -640,7 +632,7 @@ fun TestingPreview() {
             yDim = 4,//Y_BOARD_DIM,
             tablePlay = tablePlay,
             gameCardImages = gameCardImages,
-            checkPlayCardTurned = {x, y -> Unit},
+            checkPlayCardTurned = {x, y -> },
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(1f)
@@ -650,7 +642,7 @@ fun TestingPreview() {
             {}
         )
         GameWonDialog(
-            { -> Unit },
+            {},
             1000
         )
     }

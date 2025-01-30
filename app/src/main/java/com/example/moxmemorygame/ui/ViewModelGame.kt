@@ -2,8 +2,8 @@ package com.example.moxmemorygame.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -15,24 +15,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class ViewModelGame: ViewModel() {
-    private val _score: MutableState<Int> = mutableStateOf(0)
+    private val _score = mutableIntStateOf(0)
     val score get() = _score
 
-    private val _moves: MutableState<Int> = mutableStateOf(0)
+    private val _moves = mutableIntStateOf(0)
     val moves get() = _moves
 
-    var lastMove: Pair<Int, Int> = Pair(0,0)
-    val noLastMove = Pair(-1, -1) // Used to std value
-    var cardInPlay: Boolean = false
-    var gameStarted: Boolean =  false
-    var gameFinished: Boolean = false
-    var gameLost: Boolean = false
+    private var lastMove: Pair<Int, Int> = Pair(0,0)
+    private val noLastMove = Pair(-1, -1) // Used to std value
+    private var cardInPlay: Boolean = false
+    private var gameStarted: Boolean =  false
+    private var gameFinished: Boolean = false
+    private var gameLost: Boolean = false
 
     private val _tablePlay = GameCardArray()
     val tablePlay: GameCardArray get() = _tablePlay
 
     @DrawableRes
-    lateinit private var _gameCardImages: List<Int>
+    private lateinit var _gameCardImages: List<Int>
     val gameCardImages get() = _gameCardImages
 
     private val _simpleTimer = MutableStateFlow(0L)
@@ -49,10 +49,10 @@ class ViewModelGame: ViewModel() {
         resetGame()
     }
 
-    fun resetGame() {
+    private fun resetGame() {
         resetImages()
-        _score.value = 0
-        _moves.value = 0
+        _score.intValue = 0
+        _moves.intValue = 0
         lastMove = Pair(-1,-1)
         cardInPlay = false
         gameStarted = false
@@ -66,7 +66,7 @@ class ViewModelGame: ViewModel() {
         timeOfLastMove = 0L
     }
 
-    fun resetImages() {
+    private fun resetImages() {
         val dim = X_BOARD_DIM * Y_BOARD_DIM /2 -1
         _gameCardImages = GameCardImages().image.shuffled().subList(0,dim+1)
 
@@ -80,12 +80,6 @@ class ViewModelGame: ViewModel() {
                 coupled = false
             )
 
-    }
-
-    fun resetTablePlay() {
-        for (i in 0 until Y_BOARD_DIM)
-            for (j in 0 until X_BOARD_DIM)
-                _tablePlay.cardsArray[i][j].value = GameCard(0, false, false)
     }
 
     /**
@@ -116,13 +110,13 @@ class ViewModelGame: ViewModel() {
         if (lastMove == noLastMove && !_tablePlay.cardsArray[x][y].value.turned) { // first of couple, show and set card
             lastMove = Pair(x, y)
             flipSound()
-            _moves.value++
+            _moves.intValue++
             setTablePlayCardTurned(x = x,y = y, newTurnedState = true)
             cardInPlay = false // before exiting the card is not in play anymore
             return
         } else { // second of couple or second click on first
             // check if is again first of couple to revert
-            _moves.value++
+            _moves.intValue++
             if (lastMove == Pair(x, y)) { // first of couple, revert
                 _score.value -= (1 + getPointsResetTimeLastMove(0.3f))
                 lastMove = noLastMove
@@ -169,7 +163,7 @@ class ViewModelGame: ViewModel() {
         }
     }
 
-    fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
+    private fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
         //1.1
         //val oldGameCard = _tablePlay.cardsArray[x][y].value
         //1.2
@@ -205,7 +199,7 @@ class ViewModelGame: ViewModel() {
         resetGame()
     }
 
-    fun checkAllCardsCoupled(): Boolean {
+    private fun checkAllCardsCoupled(): Boolean {
         var ret = true
         for(x in (0 until X_BOARD_DIM))
             for(y in (0 until Y_BOARD_DIM)) {
@@ -218,7 +212,7 @@ class ViewModelGame: ViewModel() {
     /**
      * timing functions
      */
-    fun startSimpleTimer() {
+    private fun startSimpleTimer() {
         simpleTimerJob?.cancel()
         simpleTimerJob = viewModelScope.launch {
             while (true) {
@@ -228,12 +222,12 @@ class ViewModelGame: ViewModel() {
         }
     }
 
-    fun stopSimpleTimer() {
+    private fun stopSimpleTimer() {
         _simpleTimer.value = 0
         simpleTimerJob?.cancel()
     }
 
-    fun pauseSimpleTimer() {
+    private fun pauseSimpleTimer() {
         simpleTimerJob?.cancel()
     }
 
@@ -247,8 +241,8 @@ class ViewModelGame: ViewModel() {
      * get points to be subtracted by times passed from precedent move
      * and reset the counter
      */
-    fun getPointsResetTimeLastMove(moltiplicator: Float): Int {
-        val evaluatedTime = ((_simpleTimer.value - timeOfLastMove) * moltiplicator).toInt()
+    private fun getPointsResetTimeLastMove(multiplier: Float): Int {
+        val evaluatedTime = ((_simpleTimer.value - timeOfLastMove) * multiplier).toInt()
         timeOfLastMove = _simpleTimer.value
         return evaluatedTime
     }
