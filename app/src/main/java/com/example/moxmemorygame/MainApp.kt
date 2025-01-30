@@ -1,0 +1,657 @@
+package com.example.moxmemorygame
+
+import android.os.Build
+import android.view.SoundEffectConstants
+import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.moxmemorygame.ui.GameCard
+import com.example.moxmemorygame.ui.GameCardArray
+import com.example.moxmemorygame.ui.GameCardImages
+import com.example.moxmemorygame.ui.SoundUtils
+import com.example.moxmemorygame.ui.ViewModelGame
+import com.example.moxmemorygame.ui.X_BOARD_DIM
+import com.example.moxmemorygame.ui.Y_BOARD_DIM
+import com.example.moxmemorygame.ui.formatSimpleTime
+
+@Composable
+fun MainApp(
+    appViewModel: ViewModelGame = viewModel(),
+    modifier: Modifier = Modifier
+) {
+    // vals to enable sounds
+    val localSoundContext = LocalContext.current
+    val clickSound = { SoundUtils.playSound(localSoundContext, SoundEffectConstants.CLICK) }
+    val flipSound = { SoundUtils.playSound(localSoundContext, R.raw.flipcard) }
+    val pauseSound = { SoundUtils.playSound(localSoundContext, R.raw.keyswipe_card) }
+    val failSound = { SoundUtils.playSound(localSoundContext, R.raw.fail) }
+    val resetSound = { SoundUtils.playSound(localSoundContext, R.raw.card_mixing) }
+    val successSound = { SoundUtils.playSound(localSoundContext, R.raw.short_success_sound_glockenspiel_treasure_videogame) }
+    val winSound = { SoundUtils.playSound(localSoundContext, R.raw.brass_fanfare_with_timpani_and_winchimes_reverberated) }
+
+    val tablePlay = appViewModel.tablePlay
+
+    val checkPlayCardTurned = {x: Int, y: Int ->
+        appViewModel.checkGamePlayCardTurned(x=x, y=y,
+            flipSound=flipSound, pauseSound=pauseSound, failSound=failSound,
+            successSound=successSound, winSound=winSound) }
+
+    val actionOnPause = { appViewModel.setResetPause(); pauseSound() }
+    val actionOnReset = { appViewModel.setResetReset(); pauseSound() }
+    val actionOnResetGo = { appViewModel.setResetGo(); resetSound() }
+    val gameCardImages = appViewModel.gameCardImages
+    val gamePaused = appViewModel.gamePaused.value
+    val gameResetRequest = appViewModel.gameResetRequest.value
+    val gameWon = appViewModel.gameWon.value
+    val score = appViewModel.score.value
+    val moves = appViewModel.moves.value
+    val timeGame by appViewModel.simpleTimer.collectAsState()
+    val timeGameString = timeGame.formatSimpleTime()
+
+    BackgroudImg()
+    Column(modifier = modifier) {
+        Head(
+            score = score,
+            moves = moves,
+            timeGame = timeGameString
+        )
+
+        if (gamePaused)
+            if (gameWon)
+                GameWonDialog(
+                    onDismissRequest = actionOnResetGo,
+                    score = score
+                )
+            else
+                if (gameResetRequest)
+                    ResetDialog(
+                        onDismissRequest = actionOnReset,
+                        onConfirmation = actionOnResetGo
+                    )
+                else
+                    PauseDialog(
+                        onDismissRequest = actionOnPause
+                    )
+
+        ShowTablePlay(
+            xDim = X_BOARD_DIM,
+            yDim = Y_BOARD_DIM,
+            tablePlay = tablePlay,
+            gameCardImages = gameCardImages,
+            checkPlayCardTurned = checkPlayCardTurned,
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+        )
+
+        Tail(
+            actionOnPause = actionOnPause,
+            actionOnReset = actionOnReset
+        )
+    }
+}
+
+/**
+ * Show points and statistics
+ */
+@Composable
+fun Head(
+    score: Int,
+    moves: Int,
+    timeGame: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 5.dp, start = 10.dp, end = 10.dp)
+    ) {
+        Row {
+            Text(
+                text = "Score : " + score,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Moves: " + moves,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+        }
+        Row {
+            Text(
+                text = "Time: " + timeGame,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * Show the table - all the magic is delegated to Compose
+ */
+@Composable
+fun ShowTablePlay(
+    xDim: Int,
+    yDim: Int,
+    tablePlay: GameCardArray,
+    @DrawableRes
+    gameCardImages: List<Int>,
+    checkPlayCardTurned: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+    ) {
+        for (y in 0 until yDim) {
+            Spacer(Modifier.weight(1f))
+            Row(Modifier
+                .fillMaxWidth()
+                .weight(5f)) {
+                Spacer(Modifier.weight(1f))
+                for (x in 0 until xDim) {
+                    val turned = tablePlay.cardsArray[x][y].value.turned
+                    Image(
+                        painter = if (!turned)
+                            painterResource(id = R.drawable.retrocarta_2_small)
+                        else painterResource(
+                            gameCardImages[
+                                tablePlay.cardsArray[x][y].value.id
+                            ]
+                        ),
+                        modifier = Modifier
+                            .weight(5f)
+                            .clickable { checkPlayCardTurned( x,y ) },
+                        contentScale = if (!turned) ContentScale.FillBounds
+                        else ContentScale.Crop,
+                        contentDescription = ""
+                    )
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+        Spacer(modifier.weight(1f))
+    }
+}
+
+/**
+ * Tail shows buttons to pause and reset
+ */
+@Composable
+fun Tail(
+    actionOnPause: () -> Unit,
+    actionOnReset: () -> Unit,
+    modifier: Modifier = Modifier
+){
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 5.dp)
+    ) {
+        FilledTonalButton(
+            onClick = actionOnReset,
+            shape = RoundedCornerShape(
+                topStart = 1.dp,
+                topEnd = 16.dp,
+                bottomStart = 16.dp,
+                bottomEnd = 1.dp
+            ),
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("RESET")
+        }
+        Spacer( modifier = Modifier.padding(5.dp))
+        Button (
+            onClick = actionOnPause,
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 1.dp,
+                bottomStart = 1.dp,
+                bottomEnd = 16.dp
+            ),
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("PAUSE")
+        }
+    }
+}
+
+/**
+ * Set background
+ */
+@Composable
+fun BackgroudImg(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(id = R.drawable.background),
+        contentDescription = null,
+        alpha = 0.5f,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxSize()
+    )
+}
+
+/**
+ * Pause Dialog
+ */
+@Composable
+fun PauseDialog(
+    onDismissRequest: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = { onDismissRequest() },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
+    ) {
+        // Draw a rectangle shape with rounded corners inside the dialog
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(375.dp)
+                .padding(16.dp)
+                .clickable { onDismissRequest() }
+            ,
+            shape = //RoundedCornerShape(16.dp),
+            RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 1.dp,
+                bottomStart = 1.dp,
+                bottomEnd = 16.dp
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.pausecard),
+                    contentDescription = "PAUSE",
+                    contentScale = ContentScale.Fit,
+                    //modifier = Modifier
+                    //    .height(160.dp)
+                )
+                Text(
+                    text = "CLICK TO EXIT PAUSE",
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ResetDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = { onDismissRequest() },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
+    ) {
+        // Draw a rectangle shape with rounded corners inside the dialog
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(493.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(
+                topStart = 1.dp,
+                topEnd = 16.dp,
+                bottomStart = 16.dp,
+                bottomEnd = 1.dp
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.resetcard),
+                    contentDescription = "PAUSE",
+                    contentScale = ContentScale.Fit,
+                )
+                Text(
+                    text = "RESET GAME",
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                Text(
+                    text = "ARE YOU SURE?",
+                    modifier = Modifier.padding(0.dp),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Button(
+                        onClick = { onDismissRequest() },
+                        shape = RoundedCornerShape(
+                            topStart = 1.dp,
+                            topEnd = 16.dp,
+                            bottomStart = 16.dp,
+                            bottomEnd = 1.dp
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("BACK")
+                    }
+                    Spacer( modifier = Modifier.padding(5.dp))
+                    Button(
+                        onClick = { onConfirmation() },
+                        shape = RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 1.dp,
+                            bottomStart = 1.dp,
+                            bottomEnd = 16.dp
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("RESET")
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Pause Dialog
+ */
+@Composable
+fun GameWonDialog(
+    onDismissRequest: () -> Unit,
+    score: Int
+) {
+    Dialog(
+        onDismissRequest = { onDismissRequest() },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
+    ) {
+        // Draw a rectangle shape with rounded corners inside the dialog
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(466.dp)
+                .padding(16.dp)
+                .clickable { onDismissRequest() }
+            ,
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 1.dp,
+                bottomStart = 1.dp,
+                bottomEnd = 16.dp
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.carta_win),
+                    contentDescription = "COMPLETED",
+                    contentScale = ContentScale.Fit
+                )
+                Text(
+                    text = "CONGRATULATION!",
+                    modifier = Modifier.padding(16.dp),
+                )
+                Text(
+                    text = "FINAL SCORE: $score",
+                    fontWeight = FontWeight.Bold,
+                    //modifier = Modifier.padding(16.dp),
+                )
+                Text(
+                    text = "CLICK TO PLAY AGAIN",
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+    }
+}
+
+
+@RequiresApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+@Composable
+fun Testing(
+//    navigateToDetail: (Long) -> Unit,
+    tablePlay: GameCardArray,
+    //tablePlay: Array<Array<MutableState<GameCard>>>,
+    setPlayCardTurned: (Int, Int, Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val configuration = LocalConfiguration.current
+
+    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidth = configuration.screenWidthDp.dp
+
+    val screenDensity = configuration.densityDpi / 160f
+    val screenHeightPx = (configuration.screenHeightDp.toFloat() * screenDensity).toInt()
+    val screenWidthPx = (configuration.screenWidthDp.toFloat() * screenDensity).toInt()
+
+    //Image(imageVector = ImageVector.vectorResource(id = R.drawable.retrocarta_2_small), contentDescription = null)
+    Box()
+    {
+
+        Image(
+            painter = painterResource(id = R.drawable.background),
+            contentDescription = null,
+            alpha = 0.7f,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.size(width = 100.dp, height = 150.dp))
+            Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
+            {
+                Image(
+                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds
+                )
+
+            }
+            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
+            {
+                Image(
+                    //painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (tablePlay.cardsArray[0][1].value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.clickable {
+                        //setPlayCardTurned(0, 0, true)
+                        setPlayCardTurned(0, 1, !(tablePlay.cardsArray[0][1].value.turned))
+                    }
+                )
+
+            }
+            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
+            Text(text = "${tablePlay.cardsArray[0][1].value.turned.toString()}")
+            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
+            {
+                Image(
+                    //painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.clickable {
+                        //setPlayCardTurned(0, 0, true)
+                        setPlayCardTurned(0, 0, !(tablePlay.cardsArray[0][0].value.turned))
+                    }
+                )
+
+            }
+           // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
+            Text(text = "${tablePlay.cardsArray[0][0].value.turned.toString()}")
+        }
+    }
+}
+
+
+
+@Composable
+fun TestingDelayUsingList(
+//    navigateToDetail: (Long) -> Unit,
+    tablePlay: GameCardArray,
+    //tablePlay: Array<Array<MutableState<GameCard>>>,
+    setPlayCardTurned: (Int, Int, Boolean) -> Unit,
+    testList: SnapshotStateList<GameCard>,
+    testValue: MutableState<GameCard>,
+    testListFun: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val configuration = LocalConfiguration.current
+
+    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidth = configuration.screenWidthDp.dp
+
+    val screenDensity = configuration.densityDpi / 160f
+    val screenHeightPx = (configuration.screenHeightDp.toFloat() * screenDensity).toInt()
+    val screenWidthPx = (configuration.screenWidthDp.toFloat() * screenDensity).toInt()
+
+    //Image(imageVector = ImageVector.vectorResource(id = R.drawable.retrocarta_2_small), contentDescription = null)
+    Box()
+    {
+
+        Image(
+            painter = painterResource(id = R.drawable.background),
+            contentDescription = null,
+            alpha = 0.7f,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.size(width = 100.dp, height = 150.dp))
+            Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
+            {
+                Image(
+                    painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds
+                )
+
+            }
+            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
+            {
+                Image(
+                    //painter = painterResource(id = R.drawable.retrocarta_2_small),
+                    //painter = if (tablePlay.cardsArray[0][0].turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    painter = if (testValue.value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.clickable {
+                        //setPlayCardTurned(0, 0, true)
+                        testListFun(1)
+                    }
+                )
+
+            }
+            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
+            Text(text = "${tablePlay.cardsArray[0][1].value.turned.toString()}")
+            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
+            {
+                Image(
+                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.retrocarta_2_small) else painterResource(id = R.drawable.play_store_512),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.clickable {
+                        setPlayCardTurned(0, 0, !(tablePlay.cardsArray[0][0].value.turned))
+                    }
+                )
+
+            }
+            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
+            Text(text = "${tablePlay.cardsArray[0][0].value.turned.toString()}")
+        }
+    }
+}
+
+@Preview
+@Composable
+fun TestingPreview() {
+    Column() {
+        Head(
+            score = 0,
+            moves = 0,
+            timeGame = "05:39"
+        )
+        val gameCardImages = GameCardImages().image
+        val tablePlay = GameCardArray()
+        ShowTablePlay(
+            xDim = X_BOARD_DIM,
+            yDim = 4,//Y_BOARD_DIM,
+            tablePlay = tablePlay,
+            gameCardImages = gameCardImages,
+            checkPlayCardTurned = {x, y -> Unit},
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+        )
+        Tail(
+            {},
+            {}
+        )
+        GameWonDialog(
+            { -> Unit },
+            1000
+        )
+    }
+}
