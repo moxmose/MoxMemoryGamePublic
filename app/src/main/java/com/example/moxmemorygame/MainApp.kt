@@ -45,14 +45,14 @@ import com.example.moxmemorygame.ui.GameCard
 import com.example.moxmemorygame.ui.GameCardArray
 import com.example.moxmemorygame.ui.GameCardImages
 import com.example.moxmemorygame.ui.SoundUtils
-import com.example.moxmemorygame.ui.ViewModelGame
+import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.BOARD_WIDTH
 import com.example.moxmemorygame.ui.BOARD_HEIGHT
 import com.example.moxmemorygame.ui.formatDuration
 
 @Composable
 fun MainApp(
-    appViewModel: ViewModelGame = viewModel(),
+    appViewModel: GameViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
     // vals to enable sounds

@@ -1,0 +1,140 @@
+package com.example.moxmemorygame.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+/**
+ * [TimerViewModel] is a ViewModel responsible for managing a timer.
+ * It provides functionalities to start, stop, reset, and check the status of the timer.
+ * It exposes the elapsed time as a StateFlow for UI consumption.
+ */
+class TimerViewModel: ViewModel() {
+    private val _elapsedSeconds = MutableStateFlow(0L)
+    val elapsedSeconds = _elapsedSeconds.asStateFlow()
+
+    private var timerJob: Job? = null
+
+    /**
+     * Starts a timer that increments the elapsed seconds every second.
+     *
+     * This function does the following:
+     * 1. **Cancels any existing timer:** If a timer is already running (i.e., `timerJob` is not null),
+     *    it is canceled to prevent multiple timers from running concurrently.
+     * 2. **Launches a new coroutine:** A new coroutine is launched within the `viewModelScope` to
+     *    manage the timer's execution. This ensures that the timer is tied to the lifecycle of the
+     *    ViewModel.
+     * 3. **Enters an infinite loop:** The coroutine enters a `while (isActive)` loop, which continues
+     *    to run as long as the coroutine is active.
+     * 4. **Delays for one second:** Inside the loop, `delay(1000L)` pauses the coroutine for one
+     *    second (1000 milliseconds).
+     * 5. **Increments elapsed seconds:** After the delay, `_elapsedSeconds.value++` increments the
+     *    value of a mutable state (presumably a LiveData or StateFlow) representing the number of
+     *    seconds elapsed.
+     *
+     * The timer will continue to run until one of the following occurs:
+     * - The `viewModelScope` is cancelled (e.g., when the ViewModel is cleared).
+     * - The `timerJob` is explicitly cancelled using `timerJob?.cancel()`.
+     * - The coroutine's `isActive` flag becomes false for another reason.
+     *
+     * **Note:** This function assumes the existence of:
+     *   - `timerJob`: A `Job` used to manage the timer coroutine.
+     *   - `viewModelScope`: A `CoroutineScope` tied to the ViewModel's lifecycle.
+     *   - `_elapsedSeconds`: A mutable state holder (e.g., MutableLiveData, MutableStateFlow)
+     *     that stores the number of elapsed seconds.
+     */
+    fun startTimer() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            while (isActive) {
+                delay(1000L)
+                _elapsedSeconds.value++
+            }
+        }
+    }
+
+    /**
+     * Stops the currently running timer, if any.
+     *
+     * This function cancels the `timerJob` coroutine, effectively stopping the timer.
+     * It also sets `timerJob` to `null` to indicate that no timer is currently active.
+     *
+     * If no timer is running (i.e., `timerJob` is already `null`), calling this function has no effect.
+     */
+    fun stopTimer() {
+        timerJob?.cancel()
+        timerJob = null
+    }
+
+    /**
+     * Resets the timer.
+     *
+     * Sets the elapsed time to 0 and stops the timer.
+     */
+    fun resetTimer() {
+        _elapsedSeconds.value = 0L
+        stopTimer()
+    }
+
+    /**
+     * Stops the currently running timer and waits for its completion.
+     *
+     * This function gracefully stops the timer that is associated with [timerJob].
+     * If a timer is currently running, it will be cancelled. The function then suspends
+     * until the timer's coroutine has finished execution (if it was running).
+     * After completion, the [timerJob] is set to null, indicating that no timer is currently active.
+     *
+     * This method should be called to ensure that any ongoing timer tasks are properly
+     * terminated and resources are released.
+     *
+     * Example Usage:
+     * ```
+     *  // Assuming you have a timerJob of type Job initialized elsewhere
+     *  timerJob = someCoroutineScope.launch {
+     *      // timer logic here
+     *      while(isActive){
+     *         // do stuff
+     *         delay(1000L)
+     *      }
+     *  }
+     *
+     *  // Later, when you want to stop the timer:
+     *  stopAndAwaitTimerCompletion()
+     * ```
+     *
+     * Note: This function is safe to call even if [timerJob] is null (i.e., no timer is running).
+     * In this case, the function will simply do nothing.
+     *
+     * @see Job.cancelAndJoin
+     */
+    suspend fun stopAndAwaitTimerCompletion() {
+        timerJob?.cancelAndJoin()
+        timerJob = null
+    }
+
+    /**
+     * Checks if the timer is currently running.
+     *
+     * @return `true` if the timer is running, `false` otherwise.
+     */
+    fun isTimerRunning(): Boolean {
+        return timerJob?.isActive ?: false
+    }
+
+    /**
+     * Gets the elapsed time in seconds.
+     *
+     * @return The elapsed time in seconds.
+     */
+    fun getElapsedTime(): Long {
+        return _elapsedSeconds.value
+    }
+
+
+}

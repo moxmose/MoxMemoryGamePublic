@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ViewModelGame: ViewModel() {
+class GameViewModel: ViewModel() {
     private val _score = mutableIntStateOf(0)   // player's actual score
     val score get() = _score
 
