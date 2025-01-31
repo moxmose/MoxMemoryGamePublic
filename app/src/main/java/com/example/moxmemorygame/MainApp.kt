@@ -46,9 +46,9 @@ import com.example.moxmemorygame.ui.GameCardArray
 import com.example.moxmemorygame.ui.GameCardImages
 import com.example.moxmemorygame.ui.SoundUtils
 import com.example.moxmemorygame.ui.ViewModelGame
-import com.example.moxmemorygame.ui.X_BOARD_DIM
-import com.example.moxmemorygame.ui.Y_BOARD_DIM
-import com.example.moxmemorygame.ui.formatSimpleTime
+import com.example.moxmemorygame.ui.BOARD_WIDTH
+import com.example.moxmemorygame.ui.BOARD_HEIGHT
+import com.example.moxmemorygame.ui.formatDuration
 
 @Composable
 fun MainApp(
@@ -74,7 +74,7 @@ fun MainApp(
 
     val actionOnPause = { appViewModel.setResetPause(); pauseSound() }
     val actionOnReset = { appViewModel.setResetReset(); pauseSound() }
-    val actionOnResetGo = { appViewModel.setResetGo(); resetSound() }
+    val actionOnResetProceed = { appViewModel.resetProceed(); resetSound() }
     val gameCardImages = appViewModel.gameCardImages
     val gamePaused = appViewModel.gamePaused.value
     val gameResetRequest = appViewModel.gameResetRequest.value
@@ -82,7 +82,7 @@ fun MainApp(
     val score = appViewModel.score.intValue
     val moves = appViewModel.moves.intValue
     val timeGame by appViewModel.simpleTimer.collectAsState()
-    val timeGameString = timeGame.formatSimpleTime()
+    val timeGameString = timeGame.formatDuration()
 
     BackgroundImg()
     Column(modifier = modifier) {
@@ -95,14 +95,14 @@ fun MainApp(
         if (gamePaused)
             if (gameWon)
                 GameWonDialog(
-                    onDismissRequest = actionOnResetGo,
+                    onDismissRequest = actionOnResetProceed,
                     score = score
                 )
             else
                 if (gameResetRequest)
                     ResetDialog(
                         onDismissRequest = actionOnReset,
-                        onConfirmation = actionOnResetGo
+                        onConfirmation = actionOnResetProceed
                     )
                 else
                     PauseDialog(
@@ -110,8 +110,8 @@ fun MainApp(
                     )
 
         ShowTablePlay(
-            xDim = X_BOARD_DIM,
-            yDim = Y_BOARD_DIM,
+            xDim = BOARD_WIDTH,
+            yDim = BOARD_HEIGHT,
             tablePlay = tablePlay,
             gameCardImages = gameCardImages,
             checkPlayCardTurned = checkPlayCardTurned,
@@ -628,7 +628,7 @@ fun TestingPreview() {
         val gameCardImages = GameCardImages().image
         val tablePlay = GameCardArray()
         ShowTablePlay(
-            xDim = X_BOARD_DIM,
+            xDim = BOARD_WIDTH,
             yDim = 4,//Y_BOARD_DIM,
             tablePlay = tablePlay,
             gameCardImages = gameCardImages,

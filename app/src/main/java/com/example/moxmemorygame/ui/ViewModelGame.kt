@@ -15,26 +15,27 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class ViewModelGame: ViewModel() {
-    private val _score = mutableIntStateOf(0)
+    private val _score = mutableIntStateOf(0)   // player's actual score
     val score get() = _score
 
-    private val _moves = mutableIntStateOf(0)
+    private val _moves = mutableIntStateOf(0)   // player's actual moves
     val moves get() = _moves
 
-    private var lastMove: Pair<Int, Int> = Pair(0,0)
-    private val noLastMove = Pair(-1, -1) // Used to std value
-    private var cardInPlay: Boolean = false
-    private var gameStarted: Boolean =  false
-    private var gameFinished: Boolean = false
-    private var gameLost: Boolean = false
+    private var lastMove: Pair<Int, Int> = Pair(0,0)    // last card clicked
+    private val noLastMove = Pair(-1, -1)   // Used as standard value for precedent move
+    private var cardInPlay: Boolean = false // actual selected card
+    private var gameStarted: Boolean =  false   // game started, so start timer
+    private var gameFinished: Boolean = false   // game finished, stop timer and show score
+//    private var gameLost: Boolean = false
 
-    private val _tablePlay = GameCardArray()
+    private val _tablePlay = GameCardArray()    // array of cards arranged in a table
     val tablePlay: GameCardArray get() = _tablePlay
 
     @DrawableRes
-    private lateinit var _gameCardImages: List<Int>
+    private lateinit var _gameCardImages: List<Int> // images of cards
     val gameCardImages get() = _gameCardImages
 
+    // Timing variables
     private val _simpleTimer = MutableStateFlow(0L)
     val simpleTimer = _simpleTimer.asStateFlow()
     private var timeOfLastMove = 0L
@@ -49,8 +50,20 @@ class ViewModelGame: ViewModel() {
         resetGame()
     }
 
+    /**
+     * Resets the game to its initial state.
+     *
+     * This function performs the following actions:
+     *   - Resets and shuffles the game images using `resetAndShuffleImages()`.
+     *   - Sets the score to 0.
+     *   - Sets the number of moves to 0.
+     *   - Clears the last move information.
+     *   - Resets various game state flags (cardInPlay, gameStarted, gameFinished, gamePaused, gameResetRequest, gameWon).
+     *   - Stops the current timer and starts a new one.
+     *   - Resets the time of the last move.
+     */
     private fun resetGame() {
-        resetImages()
+        resetAndShuffleImages()
         _score.intValue = 0
         _moves.intValue = 0
         lastMove = Pair(-1,-1)
@@ -60,20 +73,34 @@ class ViewModelGame: ViewModel() {
         gamePaused.value = false
         gameResetRequest.value = false
         gameWon.value = false
-        gameLost = false
+//        gameLost = false
         stopSimpleTimer()
         startSimpleTimer()
         timeOfLastMove = 0L
     }
 
-    private fun resetImages() {
-        val dim = X_BOARD_DIM * Y_BOARD_DIM /2 -1
-        _gameCardImages = GameCardImages().image.shuffled().subList(0,dim+1)
+    /**
+     * Resets the game board and shuffles the images to be used for the game cards.
+     *
+     * This function performs the following steps:
+     * 1. **Determines the number of unique image pairs:** It calculates the number of unique image pairs needed for the game based on the board dimensions (X_BOARD_DIM and Y_BOARD_DIM).  Each unique image will have two corresponding cards on the board.
+     * 2. **Shuffles and selects images:** It takes a shuffled list of available images (from `GameCardImages().image`) and selects the required number of unique images to be used in the current game. The selected images are stored in `_gameCardImages`.
+     * 3. **Creates shuffled card indexes:** It creates a list containing pairs of indexes. Each index represents a unique image. This list includes each index twice, and it is then shuffled to randomize the positions of the image pairs on the board.
+     * 4. **Assigns values to game cards:** It iterates through each cell of the game board (`_tablePlay.cardsArray`) and assigns a `GameCard` object to it.
+     *   - **id:** The `id` of each card is taken from the shuffled `gameCardIndexes` list. This `id` corresponds to a specific image in the `_gameCardImages` list and ensures that each image appears twice on the board.
+     *   - **turned:** Initially, all cards are set to `turned = false`, meaning they are face down.
+     *   - **coupled:** Initially, all cards are set to `coupled = false`, meaning no pairs have been found yet.
+     *
+     * After this function completes, the game board is initialized with shuffled images, and all cards are face down and not yet coupled.
+     */
+    private fun resetAndShuffleImages() {
+        val dim = BOARD_WIDTH * BOARD_HEIGHT /2 -1   // dimension of the board from element 0
+        _gameCardImages = GameCardImages().image.shuffled().subList(0,dim+1)    //set of shuffled images used for actual game
 
-        val gameCardIndexes = ((0..dim) + (0..dim)).shuffled()
+        val gameCardIndexes = ((0..dim) + (0..dim)).shuffled()  //shuffled set of values from 0 to dim, twice the values
         var i = 0
-        for(x in (0 until X_BOARD_DIM))
-            for(y in (0 until Y_BOARD_DIM))
+        for(x in (0 until BOARD_WIDTH))
+            for(y in (0 until BOARD_HEIGHT))
             _tablePlay.cardsArray[x][y].value = GameCard(
                 id = gameCardIndexes[i++],
                 turned = false,
@@ -163,6 +190,19 @@ class ViewModelGame: ViewModel() {
         }
     }
 
+    /**
+     * Sets the turned state of a card on the table.
+     *
+     * This function updates the `turned` property of a specific card within the `_tablePlay.cardsArray`.
+     * It locates the card using the provided `x` and `y` coordinates and creates a new `GameCard` object with
+     * the updated `turned` state while preserving the original `id` and `coupled` properties.
+     *
+     * @param x The x-coordinate (row index) of the card on the table.
+     * @param y The y-coordinate (column index) of the card on the table.
+     * @param newTurnedState The new turned state (true for turned, false for not turned) to be set for the card.
+     *
+     * @throws IndexOutOfBoundsException if the provided `x` or `y` coordinates are out of bounds for the `_tablePlay.cardsArray`.
+     */
     private fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
         //1.1
         //val oldGameCard = _tablePlay.cardsArray[x][y].value
@@ -175,6 +215,20 @@ class ViewModelGame: ViewModel() {
         _tablePlay.cardsArray[x][y].value = with(_tablePlay.cardsArray[x][y].value) { GameCard(id, newTurnedState, coupled) }
     }
 
+    /**
+     * Toggles the pause state of the game and manages the associated timer.
+     *
+     * This function checks the current pause state of the game. If the game is not currently paused,
+     * it pauses the game by setting `gamePaused.value` to `true` and then calls `pauseSimpleTimer()` to stop
+     * the underlying timer. If the game is already paused, it resumes the game by setting `gamePaused.value`
+     * to `false` and then calls `startSimpleTimer()` to restart the timer.
+     *
+     * This function effectively acts as a "pause/resume" button for the game.
+     *
+     * @see gamePaused
+     * @see pauseSimpleTimer
+     * @see startSimpleTimer
+     */
     fun setResetPause() {
         if (!gamePaused.value) {
             gamePaused.value = true
@@ -185,6 +239,27 @@ class ViewModelGame: ViewModel() {
         }
     }
 
+    /**
+     * Toggles the game reset request state and triggers a pause reset.
+     *
+     * This function manages a boolean flag `gameResetRequest` which indicates whether a game reset has been requested.
+     * It inverts the current state of `gameResetRequest` and then calls `setResetPause()` to handle
+     * any necessary pause-related actions associated with the reset.
+     *
+     * Specifically:
+     * - If `gameResetRequest` is currently `false` (no reset requested), it sets it to `true` (reset requested)
+     *   and then calls `setResetPause()`.
+     * - If `gameResetRequest` is currently `true` (reset requested), it sets it to `false` (reset request cancelled)
+     *   and then calls `setResetPause()`.
+     *
+     * The `setResetPause()` function is responsible for handling the pause state potentially associated with a game reset.
+     * This could include pausing the game, showing a reset confirmation screen, or any other relevant actions.
+     *
+     * Note: The `gameResetRequest` variable is assumed to be a `MutableLiveData<Boolean>` or similar observable type
+     * that can hold a boolean value and trigger UI updates when its value changes.
+     *
+     * @see setResetPause
+     */
     fun setResetReset() {
         if(!gameResetRequest.value) {
             gameResetRequest.value = true
@@ -195,23 +270,51 @@ class ViewModelGame: ViewModel() {
         }
     }
 
-    fun setResetGo() {
+    /**
+     * Resets the game to its initial state and allows it to proceed.
+     *
+     * Calls [resetGame] to perform the reset operation.
+     */
+    fun resetProceed() {
         resetGame()
     }
 
+    /**
+     * Checks if all cards on the game board are coupled.
+     *
+     * This function iterates through all cards in the `tablePlay.cardsArray` (which represents the game board)
+     * and verifies if each card's `coupled` property is set to `true`.
+     * A card is considered "coupled" if it has been successfully paired with another identical card during the game.
+     *
+     * The function uses a flattened approach to simplify the iteration over the 2D array. It essentially combines
+     * all rows into a single list and then checks the 'coupled' property of each card in that list.
+     *
+     * @return `true` if all cards on the board are coupled, `false` otherwise.
+     *         Returns false if any card on the board is not coupled.
+     *
+     * @see tablePlay
+     * @see tablePlay.cardsArray
+     * @see cardsArray.coupled
+     */
     private fun checkAllCardsCoupled(): Boolean {
-        var ret = true
-        for(x in (0 until X_BOARD_DIM))
-            for(y in (0 until Y_BOARD_DIM)) {
-                if (!tablePlay.cardsArray[x][y].value.coupled)
-                    ret = false
-            }
-        return ret
+        // 1.
+        //var ret = true
+        //for(x in (0 until BOARD_WIDTH))
+        //    for(y in (0 until BOARD_HEIGHT)) {
+        //        if (!tablePlay.cardsArray[x][y].value.coupled)
+        //            ret = false
+        //    }
+        //return ret
+        // 2.
+        //return tablePlay.cardsArray.all { row -> row.all { it.value.coupled } }
+        return tablePlay.cardsArray.flatten().all { it.value.coupled }
     }
 
     /**
      * timing functions
      */
+
+
     private fun startSimpleTimer() {
         simpleTimerJob?.cancel()
         simpleTimerJob = viewModelScope.launch {
@@ -250,19 +353,25 @@ class ViewModelGame: ViewModel() {
 }
 
 /**
- * Utility to format a long to time HH:MM:SS string
+ * Utility to format a duration in seconds to a time string (HH:MM:SS or MM:SS).
  */
-fun Long.formatSimpleTime(hoursDisplay: Boolean = false): String {
-    val hrs = this / 3600
-    val mins = (this % 3600) / 60
-    val secs = this % 60
-    val retStr =
-        if (hoursDisplay)
-            String.format(java.util.Locale.UK,"%02d:%02d:%02d", hrs, mins, secs)
-        else
-            if (hrs>0)
-                "99:99"
-            else
-                String.format(java.util.Locale.UK,"%02d:%02d", mins, secs)
-    return retStr
+fun Long.formatDuration(showHours: Boolean = false): String {
+    require(this >= 0) { "Duration must be non-negative" }
+
+    // API<26
+    val totalSeconds = this
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return if (showHours) {
+        String.format(java.util.Locale.UK, "%02d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        if (hours > 0) {
+            // If hours are present but not displayed, show a placeholder
+            "99:99"
+        } else {
+            String.format(java.util.Locale.UK, "%02d:%02d", minutes, seconds)
+        }
+    }
 }
