@@ -2,6 +2,7 @@ package com.example.moxmemorygame.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -14,19 +15,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class GameViewModel: ViewModel() {
+class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
     private val _score = mutableIntStateOf(0)   // player's actual score
     val score get() = _score
 
     private val _moves = mutableIntStateOf(0)   // player's actual moves
     val moves get() = _moves
 
-    private var lastMove: Pair<Int, Int> = Pair(0,0)    // last card clicked
-    private val noLastMove = Pair(-1, -1)   // Used as standard value for precedent move
-    private var cardInPlay: Boolean = false // actual selected card
-    private var gameStarted: Boolean =  false   // game started, so start timer
-    private var gameFinished: Boolean = false   // game finished, stop timer and show score
-//    private var gameLost: Boolean = false
+    private var lastMove: Pair<Int, Int> = Pair(0,0)    // coordinates of last card clicked
+    private val noLastMove = Pair(-1, -1)   // Used as standard value for previous move
+    private var cardInPlay: Boolean = false // true if there is a actual selected card
+//    private var gameStarted: Boolean =  false   // game started, so start timer
+//    private var gameFinished: Boolean = false   // game finished, stop timer and show score
 
     private val _tablePlay = GameCardArray()    // array of cards arranged in a table
     val tablePlay: GameCardArray get() = _tablePlay
@@ -36,11 +36,8 @@ class GameViewModel: ViewModel() {
     val gameCardImages get() = _gameCardImages
 
     // Timing variables
-    private val _simpleTimer = MutableStateFlow(0L)
-    val simpleTimer = _simpleTimer.asStateFlow()
+    val currentTime = timerViewModel.elapsedSeconds
     private var timeOfLastMove = 0L
-
-    private var simpleTimerJob: Job? = null
 
     var gamePaused: MutableState<Boolean> = mutableStateOf(false)
     var gameResetRequest: MutableState<Boolean> = mutableStateOf(false)
@@ -68,14 +65,13 @@ class GameViewModel: ViewModel() {
         _moves.intValue = 0
         lastMove = Pair(-1,-1)
         cardInPlay = false
-        gameStarted = false
-        gameFinished = false
+    //    gameStarted = false
+    //    gameFinished = false
         gamePaused.value = false
         gameResetRequest.value = false
         gameWon.value = false
-//        gameLost = false
-        stopSimpleTimer()
-        startSimpleTimer()
+        timerViewModel.resetTimer()
+        timerViewModel.startTimer()
         timeOfLastMove = 0L
     }
 
@@ -125,15 +121,15 @@ class GameViewModel: ViewModel() {
         if (cardInPlay) { // if yet in play, exit
             return
         }
-        cardInPlay = true // now card is in play, remember to to revert when necessary
+        cardInPlay = true // from now card is in play, remember to to revert when necessary
 
-        // check if is a 'false', a discovered couple
+        // check if is a 'false', a click on a discovered couple
         if (_tablePlay.cardsArray[x][y].value.coupled) {
             cardInPlay = false // before exiting the card is not in play anymore
             return
         }
 
-        // first of couple ?
+        // is the first of a couple?
         if (lastMove == noLastMove && !_tablePlay.cardsArray[x][y].value.turned) { // first of couple, show and set card
             lastMove = Pair(x, y)
             flipSound()
@@ -145,7 +141,8 @@ class GameViewModel: ViewModel() {
             // check if is again first of couple to revert
             _moves.intValue++
             if (lastMove == Pair(x, y)) { // first of couple, revert
-                _score.value -= (1 + getPointsResetTimeLastMove(0.3f))
+                refreshPointsNoCoupleSelected()
+                //_score.value -= (1 + getPointsResetTimeLastMove(0.3f))
                 lastMove = noLastMove
                 flipSound()
                 setTablePlayCardTurned(x = x,y = y, newTurnedState = false)
@@ -159,8 +156,8 @@ class GameViewModel: ViewModel() {
                     _tablePlay.cardsArray[x][y].value.id
                 ) {
 
-                    // TODO
-                    _score.value += 12 - getPointsResetTimeLastMove(0.2f)
+                    refreshPointsRightCouple()
+                    //_score.value += 12 - getPointsResetTimeLastMove(0.2f)
                     tablePlay.cardsArray[lastMove.first][lastMove.second].value.coupled = true
                     tablePlay.cardsArray[x][y].value.coupled = true
                     // check if it was the last couple -> Game won
@@ -174,7 +171,8 @@ class GameViewModel: ViewModel() {
                     cardInPlay = false // before exiting the card is not in play anymore
                     return
                 } else { //no pair found, start a delay than revert the couple
-                    _score.value -= (3 + getPointsResetTimeLastMove(0.4f))
+                    refreshPointsWrongCouple()
+                    //_score.value -= (3 + getPointsResetTimeLastMove(0.4f))
                     failSound()
                     viewModelScope.launch(Dispatchers.Default) {
                         delay(1400L)
@@ -194,16 +192,23 @@ class GameViewModel: ViewModel() {
      * Sets the turned state of a card on the table.
      *
      * This function updates the `turned` property of a specific card within the `_tablePlay.cardsArray`.
-     * It locates the card using the provided `x` and `y` coordinates and creates a new `GameCard` object with
-     * the updated `turned` state while preserving the original `id` and `coupled` properties.
+     * It identifies the target card using the provided `x` and `y` coordinates (representing row and column indices).
+     * It then updates the card's `turned` state to the given `newTurnedState` while preserving its existing `id` and `coupled` properties.
+     * The update is performed using the `copyChangingTurned` method on the `GameCard` object.
      *
-     * @param x The x-coordinate (row index) of the card on the table.
-     * @param y The y-coordinate (column index) of the card on the table.
-     * @param newTurnedState The new turned state (true for turned, false for not turned) to be set for the card.
+     * The `_tablePlay.cardsArray` is treated as a 2D array (list of lists), where:
+     * - `x` represents the row index.
+     * - `y` represents the column index within that row.
      *
-     * @throws IndexOutOfBoundsException if the provided `x` or `y` coordinates are out of bounds for the `_tablePlay.cardsArray`.
+     * @param x The x-coordinate (row index) of the card on the table. Must be within the valid range of row indices for `_tablePlay.cardsArray`.
+     * @param y The y-coordinate (column index) of the card on the table. Must be within the valid range of column indices for the row `x` in `_tablePlay.cardsArray`.
+     * @param newTurnedState The new turned state of the card. `true` indicates the card should be turned, `false` indicates it should not be turned.
      */
     private fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
+        // Validate input coordinates in a strict constriction
+        require(x in _tablePlay.cardsArray.indices) { "x coordinate is out of bounds" }
+        require(y in _tablePlay.cardsArray[x].indices) { "y coordinate is out of bounds" }
+        //different implementations:
         //1.1
         //val oldGameCard = _tablePlay.cardsArray[x][y].value
         //1.2
@@ -212,30 +217,36 @@ class GameViewModel: ViewModel() {
         //1 -> 2
         //val newGameCard = with(_tablePlay[x][y].value) { GameCard(id, newTurnedState, coupled) }
         //_tablePlay[x][y].value = with(_tablePlay[x][y].value) { GameCard(id, newTurnedState, coupled) }
-        _tablePlay.cardsArray[x][y].value = with(_tablePlay.cardsArray[x][y].value) { GameCard(id, newTurnedState, coupled) }
+        //_tablePlay.cardsArray[x][y].value = with(_tablePlay.cardsArray[x][y].value) { GameCard(id, newTurnedState, coupled) }
+        //_tablePlay.cardsArray[x][y].value = _tablePlay.cardsArray[x][y].value.copyChangingTurned(newTurnedState)
+        with(_tablePlay.cardsArray[x][y]) { value = value.copyChangingTurned(newTurnedState) }
     }
 
     /**
-     * Toggles the pause state of the game and manages the associated timer.
+     * Toggles the game's pause/resume state and manages the associated timer.
      *
-     * This function checks the current pause state of the game. If the game is not currently paused,
-     * it pauses the game by setting `gamePaused.value` to `true` and then calls `pauseSimpleTimer()` to stop
-     * the underlying timer. If the game is already paused, it resumes the game by setting `gamePaused.value`
-     * to `false` and then calls `startSimpleTimer()` to restart the timer.
+     * This function acts as a pause/resume toggle for the game. When called, it inverts the current
+     * pause state and updates the game timer accordingly.
      *
-     * This function effectively acts as a "pause/resume" button for the game.
+     * - **Pausing:** If the game is running (not paused), this function will:
+     *   1. Set `gamePaused` to `true`.
+     *   2. Pause the game timer using `timerViewModel.pauseTimer()`.
      *
-     * @see gamePaused
-     * @see pauseSimpleTimer
-     * @see startSimpleTimer
+     * - **Resuming:** If the game is paused, this function will:
+     *   1. Set `gamePaused` to `false`.
+     *   2. Resume the game timer using `timerViewModel.resumeTimer()`.
+     *
+     * This effectively controls both the game's logic flow (via `gamePaused`) and its timer.
+     *
+     * **Note:** This function only manages pausing and resuming. It does not handle game or timer reset.
      */
     fun setResetPause() {
         if (!gamePaused.value) {
             gamePaused.value = true
-            pauseSimpleTimer()
+            timerViewModel.pauseTimer()
         } else {
             gamePaused.value = false
-            startSimpleTimer()
+            timerViewModel.resumeTimer()
         }
     }
 
@@ -279,24 +290,28 @@ class GameViewModel: ViewModel() {
         resetGame()
     }
 
+
     /**
      * Checks if all cards on the game board are coupled.
      *
      * This function iterates through all cards in the `tablePlay.cardsArray` (which represents the game board)
-     * and verifies if each card's `coupled` property is set to `true`.
-     * A card is considered "coupled" if it has been successfully paired with another identical card during the game.
+     * and verifies if each card's `coupled` property is true.
      *
-     * The function uses a flattened approach to simplify the iteration over the 2D array. It essentially combines
-     * all rows into a single list and then checks the 'coupled' property of each card in that list.
+     * A card is considered "coupled" if it has been matched with another card of the same value.
+     * This function efficiently checks this condition for all cards.
      *
-     * @return `true` if all cards on the board are coupled, `false` otherwise.
-     *         Returns false if any card on the board is not coupled.
+     * The implementation utilizes a flattened representation of the 2D array `tablePlay.cardsArray`
+     * for easier iteration and leverages the `all` higher-order function for a concise check.
+     *
+     * @return `true` if all cards on the board are coupled (i.e., their `coupled` property is true),
+     *         `false` otherwise.
      *
      * @see tablePlay
      * @see tablePlay.cardsArray
-     * @see cardsArray.coupled
+     * @see Card.coupled
      */
     private fun checkAllCardsCoupled(): Boolean {
+        //old classical implementation
         // 1.
         //var ret = true
         //for(x in (0 until BOARD_WIDTH))
@@ -311,67 +326,28 @@ class GameViewModel: ViewModel() {
     }
 
     /**
-     * timing functions
-     */
-
-
-    private fun startSimpleTimer() {
-        simpleTimerJob?.cancel()
-        simpleTimerJob = viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                _simpleTimer.value++
-            }
-        }
-    }
-
-    private fun stopSimpleTimer() {
-        _simpleTimer.value = 0
-        simpleTimerJob?.cancel()
-    }
-
-    private fun pauseSimpleTimer() {
-        simpleTimerJob?.cancel()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        simpleTimerJob?.cancel()
-    }
-
-
-    /**
      * get points to be subtracted by times passed from precedent move
      * and reset the counter
      */
     private fun getPointsResetTimeLastMove(multiplier: Float): Int {
-        val evaluatedTime = ((_simpleTimer.value - timeOfLastMove) * multiplier).toInt()
-        timeOfLastMove = _simpleTimer.value
-        return evaluatedTime
+        val timerPoints = ((currentTime.value - timeOfLastMove) * multiplier).toInt()
+        timeOfLastMove = currentTime.value
+        return timerPoints
     }
 
-}
+    private fun refreshPointsWrongCouple() {_score.value -= (3 + getPointsResetTimeLastMove(0.4f))}
+    private fun refreshPointsRightCouple() {_score.value += (12 - getPointsResetTimeLastMove(0.2f))}
+    private fun refreshPointsNoCoupleSelected() {_score.value -= (1 + getPointsResetTimeLastMove(0.5f))}
 
-/**
- * Utility to format a duration in seconds to a time string (HH:MM:SS or MM:SS).
- */
-fun Long.formatDuration(showHours: Boolean = false): String {
-    require(this >= 0) { "Duration must be non-negative" }
-
-    // API<26
-    val totalSeconds = this
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-
-    return if (showHours) {
-        String.format(java.util.Locale.UK, "%02d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        if (hours > 0) {
-            // If hours are present but not displayed, show a placeholder
-            "99:99"
-        } else {
-            String.format(java.util.Locale.UK, "%02d:%02d", minutes, seconds)
+    /**
+     * This ViewModel's `onCleared` implementation.
+     */
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            timerViewModel.stopAndAwaitTimerCompletion()
         }
     }
+
 }
+

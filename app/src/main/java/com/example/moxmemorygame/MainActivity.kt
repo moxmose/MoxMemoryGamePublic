@@ -28,13 +28,21 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.moxmemorygame.ui.GameViewModel
+import com.example.moxmemorygame.ui.TimerViewModel
 import com.example.moxmemorygame.ui.theme.MoxMemoryGameTheme
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.context.startKoin
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             MoxMemoryGameTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()
@@ -47,79 +55,8 @@ class MainActivity : ComponentActivity() {
                     MainApp(
                         modifier = Modifier.padding(innerPadding)
                     )
-                    /*    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    ) */
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    val configuration = LocalConfiguration.current
-
-    val screenHeight = configuration.screenHeightDp.dp
-    val screenWidth = configuration.screenWidthDp.dp
-
-    val screenDensity = configuration.densityDpi / 160f
-    val screenHeightPx = (configuration.screenHeightDp.toFloat() * screenDensity).toInt()
-    val screenWidthPx = (configuration.screenWidthDp.toFloat() * screenDensity).toInt()
-
-    Text(
-        text = "Hello $name! H=$screenHeight W=$screenWidth,\n Density=$screenDensity Hpx=$screenHeightPx Wpx=$screenWidthPx",
-        modifier = modifier
-    )
-    //Image(imageVector = ImageVector.vectorResource(id = R.drawable.retrocarta_2_small), contentDescription = null)
-    Box()
-    {
-
-        Image(
-            painter = painterResource(id = R.drawable.background_00),
-            contentDescription = null,
-            alpha = 0.7f,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(modifier = Modifier.size(width = 100.dp, height = 150.dp))
-            Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
-            {
-                Image(
-                    painter = painterResource(id = R.drawable.card_back),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds
-                )
-
-            }
-            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
-            {
-                Image(
-                    painter = painterResource(id = R.drawable.card_back),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds
-                )
-
-            }
-            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
-            {
-                Image(
-                    painter = painterResource(id = R.drawable.card_back),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                )
-
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MoxMemoryGameTheme {
-        Greeting("Android")
     }
 }

@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -20,6 +21,7 @@ class TimerViewModel: ViewModel() {
     val elapsedSeconds = _elapsedSeconds.asStateFlow()
 
     private var timerJob: Job? = null
+    private var isPaused: Boolean = false
 
     /**
      * Starts a timer that increments the elapsed seconds every second.
@@ -51,11 +53,16 @@ class TimerViewModel: ViewModel() {
      */
     fun startTimer() {
         timerJob?.cancel()
+        isPaused = false
         timerJob = viewModelScope.launch {
             while (isActive) {
                 delay(1000L)
-                _elapsedSeconds.value++
+                if(!isPaused){
+                    _elapsedSeconds.value++
+                }
             }
+
+
         }
     }
 
@@ -69,6 +76,7 @@ class TimerViewModel: ViewModel() {
      */
     fun stopTimer() {
         timerJob?.cancel()
+        isPaused = true
         timerJob = null
     }
 
@@ -115,6 +123,7 @@ class TimerViewModel: ViewModel() {
      */
     suspend fun stopAndAwaitTimerCompletion() {
         timerJob?.cancelAndJoin()
+        isPaused = true
         timerJob = null
     }
 
@@ -136,5 +145,42 @@ class TimerViewModel: ViewModel() {
         return _elapsedSeconds.value
     }
 
+    fun pauseTimer(){
+        isPaused = true
+    }
 
+    fun resumeTimer(){
+        isPaused = false
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            stopAndAwaitTimerCompletion()
+        }
+    }
+}
+
+/**
+ * Utility to format a duration in seconds to a time string (HH:MM:SS or MM:SS).
+ */
+fun Long.formatDuration(showHours: Boolean = false): String {
+    require(this >= 0) { "Duration must be non-negative" }
+
+    // API<26
+    val totalSeconds = this
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return if (showHours) {
+        String.format(java.util.Locale.UK, "%02d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        if (hours > 0) {
+            // If hours are present but not displayed, show a placeholder
+            "99:99"
+        } else {
+            String.format(java.util.Locale.UK, "%02d:%02d", minutes, seconds)
+        }
+    }
 }

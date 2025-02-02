@@ -40,7 +40,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.moxmemorygame.ui.GameCard
 import com.example.moxmemorygame.ui.GameCardArray
 import com.example.moxmemorygame.ui.GameCardImages
@@ -49,10 +48,11 @@ import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.BOARD_WIDTH
 import com.example.moxmemorygame.ui.BOARD_HEIGHT
 import com.example.moxmemorygame.ui.formatDuration
+import org.koin.androidx.compose.getViewModel
 
 @Composable
 fun MainApp(
-    appViewModel: GameViewModel = viewModel(),
+    appViewModel: GameViewModel = getViewModel(),
     modifier: Modifier = Modifier
 ) {
     // vals to enable sounds
@@ -81,7 +81,7 @@ fun MainApp(
     val gameWon = appViewModel.gameWon.value
     val score = appViewModel.score.intValue
     val moves = appViewModel.moves.intValue
-    val timeGame by appViewModel.simpleTimer.collectAsState()
+    val timeGame by appViewModel.currentTime.collectAsState()
     val timeGameString = timeGame.formatDuration()
 
     BackgroundImg()
@@ -619,7 +619,7 @@ fun TestingDelayUsingList(
 @Preview
 @Composable
 fun TestingPreview() {
-    Column() {
+    Column {
         Head(
             score = 0,
             moves = 0,

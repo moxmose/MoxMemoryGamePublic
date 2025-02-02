@@ -44,6 +44,12 @@ dependencies {
     // SplashScreen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    // Koin for Android
+    implementation("io.insert-koin:koin-android:3.4.0")
+
+    // Koin for Jetpack Compose (if you're using Compose)
+    implementation("io.insert-koin:koin-androidx-compose:3.4.5")
+
     //implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
     // Lifecycles only (without ViewModel or LiveData)
     //implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
