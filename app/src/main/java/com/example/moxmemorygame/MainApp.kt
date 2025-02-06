@@ -74,11 +74,15 @@ fun MainApp(
 
     val actionOnPause = { appViewModel.setResetPause(); pauseSound() }
     val actionOnReset = { appViewModel.setResetReset(); pauseSound() }
-    val actionOnResetProceed = { appViewModel.resetProceed(); resetSound() }
+//    val actionOnResetProceed = { appViewModel.resetProceed(); resetSound() }
+    val actionOnResetProceed = { appViewModel.resetProceed(); appViewModel.setPlayResetSound() }
     val gameCardImages = appViewModel.gameCardImages
     val gamePaused = appViewModel.gamePaused.value
     val gameResetRequest = appViewModel.gameResetRequest.value
     val gameWon = appViewModel.gameWon.value
+    val gamePlayResetSound = appViewModel.gamePlayResetSound
+    val resetPlayResetSound = { appViewModel.resetPlayResetSound(resetSound) }
+
     val score = appViewModel.score.intValue
     val moves = appViewModel.moves.intValue
     val timeGame by appViewModel.currentTime.collectAsState()
@@ -91,6 +95,10 @@ fun MainApp(
             moves = moves,
             timeGame = timeGameString
         )
+
+        if(gamePlayResetSound) {
+            resetPlayResetSound()
+        }
 
         if (gamePaused)
             if (gameWon)

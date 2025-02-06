@@ -22,10 +22,13 @@ class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
     private val _moves = mutableIntStateOf(0)   // player's actual moves
     val moves get() = _moves
 
+    private var _gamePlayResetSound = mutableStateOf(false) // play reset Sound
+    val gamePlayResetSound get() = _gamePlayResetSound.value
+
     private var lastMove: Pair<Int, Int> = Pair(0,0)    // coordinates of last card clicked
     private val noLastMove = Pair(-1, -1)   // Used as standard value for previous move
     private var cardInPlay: Boolean = false // true if there is a actual selected card
-//    private var gameStarted: Boolean =  false   // game started, so start timer
+
 //    private var gameFinished: Boolean = false   // game finished, stop timer and show score
 
     private val _tablePlay = GameCardArray()    // array of cards arranged in a table
@@ -65,6 +68,7 @@ class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
         _moves.intValue = 0
         lastMove = Pair(-1,-1)
         cardInPlay = false
+        _gamePlayResetSound.value = true
     //    gameStarted = false
     //    gameFinished = false
         gamePaused.value = false
@@ -288,6 +292,30 @@ class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
      */
     fun resetProceed() {
         resetGame()
+    }
+
+    /**
+     * Sets the value of the `_gamePlayResetSound` LiveData to `true`, signaling that the game play
+     * reset sound should be played. This function is called both when the game is first started
+     * and when the game state is reset. It triggers the playback of a sound effect associated
+     * with either the initial setup or a reset action.
+     */
+    fun setPlayResetSound() {
+        _gamePlayResetSound.value = true
+
+    }
+
+    /**
+     * Plays the game reset sound and resets the internal sound played state.
+     *
+     * Executes the provided `resetSound` lambda to play the sound effect and then sets
+     * `_gamePlayResetSound` to `false`, allowing the sound to be played again on the next reset.
+     *
+     * @param resetSound Lambda to play the reset sound.
+     */
+    fun resetPlayResetSound(resetSound: () -> Unit) {
+        resetSound()
+        _gamePlayResetSound.value = false
     }
 
 
