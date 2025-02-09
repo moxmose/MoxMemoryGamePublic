@@ -50,6 +50,9 @@ dependencies {
     // Koin for Jetpack Compose (if you're using Compose)
     implementation("io.insert-koin:koin-androidx-compose:3.4.5")
 
+    // Navigation for Compose
+    implementation("androidx.navigation:navigation-compose:2.8.6")
+
     //implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
     // Lifecycles only (without ViewModel or LiveData)
     //implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
