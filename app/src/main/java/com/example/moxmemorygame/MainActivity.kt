@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.moxmemorygame.ui.GameViewModel
+import com.example.moxmemorygame.ui.NavGraph
 import com.example.moxmemorygame.ui.TimerViewModel
 import com.example.moxmemorygame.ui.theme.MoxMemoryGameTheme
 import org.koin.android.ext.koin.androidContext
@@ -52,9 +53,10 @@ class MainActivity : ComponentActivity() {
                     val context = LocalContext.current
                     (context as? Activity)?.requestedOrientation = ActivityInfo. SCREEN_ORIENTATION_PORTRAIT
 
-                    MainApp(
+                    NavGraph()
+                    /*MainApp(
                         modifier = Modifier.padding(innerPadding)
-                    )
+                    )*/
                 }
             }
         }

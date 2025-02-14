@@ -25,8 +25,3 @@ class MyApplication : Application() {
         }
     }
 }
-
-// TODO: add main screen, where
-// TODO: add preference screen for background
-// TODO: add preference screen for cards sets
-// TODO: improve cards preference screen for select single cards and dimension

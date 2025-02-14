@@ -5,6 +5,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.moxmemorygame.TestGameScreen
+import com.example.moxmemorygame.TestOpeningMenuScreen
+import com.example.moxmemorygame.TestPreferencesScreen
 
 @Composable
 fun NavGraph(navController: NavHostController = rememberNavController()) {
@@ -13,13 +16,13 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         startDestination = Screen.OpeningMenuScreen.route
     ) {
         composable(Screen.OpeningMenuScreen.route) {
-            OpeningMenuScreen(navController = navController)
+            TestOpeningMenuScreen(navController = navController)
         }
         composable(Screen.PreferencesScreen.route) {
-            PreferencesScreen(navController = navController)
+            TestPreferencesScreen(navController = navController)
         }
         composable(Screen.GameScreen.route) {
-            GameScreen(navController = navController)
+            TestGameScreen(navController = navController)
         }
     }
 
