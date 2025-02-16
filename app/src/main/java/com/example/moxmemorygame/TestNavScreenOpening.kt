@@ -2,6 +2,7 @@ package com.example.moxmemorygame
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -12,7 +13,10 @@ import androidx.navigation.NavController
 import com.example.moxmemorygame.ui.Screen
 
 @Composable
-fun TestOpeningMenuScreen(navController: NavController) {
+fun TestOpeningMenuScreen(
+    navController: NavController,
+    innerPadding: PaddingValues
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -29,7 +33,9 @@ fun TestOpeningMenuScreen(navController: NavController) {
 }
 
 @Composable
-fun TestPreferencesScreen(navController: NavController) {
+fun TestPreferencesScreen(navController: NavController,
+                          innerPadding: PaddingValues
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -40,7 +46,9 @@ fun TestPreferencesScreen(navController: NavController) {
 }
 
 @Composable
-fun TestGameScreen(navController: NavController) {
+fun TestGameScreen(navController: NavController,
+                   innerPadding: PaddingValues
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,

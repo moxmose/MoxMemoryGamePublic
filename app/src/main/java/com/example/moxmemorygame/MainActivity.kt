@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
                     val context = LocalContext.current
                     (context as? Activity)?.requestedOrientation = ActivityInfo. SCREEN_ORIENTATION_PORTRAIT
 
-                    NavGraph()
+                    NavGraph(innerPadding = innerPadding)
                     /*MainApp(
                         modifier = Modifier.padding(innerPadding)
                     )*/
