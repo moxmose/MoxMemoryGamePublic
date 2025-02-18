@@ -1,6 +1,7 @@
 package com.example.moxmemorygame.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -27,44 +29,51 @@ fun OpeningMenuScreen(
 //    navHostController: NavHostController,
     innerPadding: PaddingValues
 ) {
-    BackgroundImg()
-    Column(
+    Box(
         modifier = Modifier
-            .padding(innerPadding)
-            .fillMaxWidth()
+            .fillMaxSize()
+            .padding(innerPadding), // Apply innerPadding here
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "MOX MEMORY GAME",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-            )
-        Button(
-            onClick = { navigateToGame() },
-            shape = RoundedCornerShape(
-            topStart = 16.dp,
-            topEnd = 1.dp,
-            bottomStart = 1.dp,
-            bottomEnd = 16.dp
-                ),
+        BackgroundImg()
+        Column(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-            ) {
-            Text( text = "START GAME")
-        }
-        Button(
-            onClick = { navigateToPreferences() },
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 1.dp,
-                bottomStart = 1.dp,
-                bottomEnd = 16.dp
-            ),
-            modifier = Modifier
-                .padding(16.dp)
+                .padding(innerPadding)
                 .fillMaxWidth()
         ) {
-            Text( text = "SETTINGS")
+            Text(
+                text = "MOX MEMORY GAME",
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = { navigateToGame() },
+                shape = RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 1.dp,
+                    bottomStart = 1.dp,
+                    bottomEnd = 16.dp
+                ),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "START GAME")
+            }
+            Button(
+                onClick = { navigateToPreferences() },
+                shape = RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 1.dp,
+                    bottomStart = 1.dp,
+                    bottomEnd = 16.dp
+                ),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "SETTINGS")
+            }
         }
     }
 }
