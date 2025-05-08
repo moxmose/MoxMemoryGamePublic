@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,15 +19,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.R
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun OpeningMenuScreen(
-    navigateToGame: () -> Unit,
-    navigateToPreferences: () -> Unit,
-//    navHostController: NavHostController,
+    viewModel: OpeningMenuViewModel = koinViewModel(),
     innerPadding: PaddingValues
 ) {
     Box(
@@ -47,7 +46,7 @@ fun OpeningMenuScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Button(
-                onClick = { navigateToGame() },
+                onClick = viewModel::onStartGameClicked,
                 shape = RoundedCornerShape(
                     topStart = 16.dp,
                     topEnd = 1.dp,
@@ -61,7 +60,7 @@ fun OpeningMenuScreen(
                 Text(text = "START GAME")
             }
             Button(
-                onClick = { navigateToPreferences() },
+                onClick = viewModel::onSettingsClicked,
                 shape = RoundedCornerShape(
                     topStart = 16.dp,
                     topEnd = 1.dp,
@@ -92,11 +91,11 @@ fun BackgroundImg() {
     )
 }
 
+@SuppressLint("ViewModelConstructorInComposable")
 @Preview
 @Composable
 fun OpeningMenuScreenPreview() {
-    //val fakeNavController = rememberNavController() // Crea un NavHostController "fake"
-    val fakeNavigation: () -> Unit = {}
-    val fakePadding = PaddingValues(16.dp) // Crea dei PaddingValues "fake"
-    OpeningMenuScreen(fakeNavigation, fakeNavigation, fakePadding)
+    val fakeViewModel = OpeningMenuViewModel(navController = rememberNavController())
+    val fakePadding = PaddingValues(16.dp)
+    OpeningMenuScreen(fakeViewModel, fakePadding)
 }

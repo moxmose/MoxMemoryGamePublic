@@ -2,29 +2,43 @@ package com.example.moxmemorygame.ui
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.TestGameScreen
-import com.example.moxmemorygame.TestOpeningMenuScreen
 import com.example.moxmemorygame.TestPreferencesScreen
+import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
+import org.koin.core.context.GlobalContext
 
 @Composable
 fun NavGraph(
     innerPadding: PaddingValues,
-    navController: NavHostController = rememberNavController()) {
+    navController: NavHostController = rememberNavController(),
+
+) {
+    // get the koin instance from the Koin Global Context
+    val koin = GlobalContext.get()
+    // get the NavigationManager from the Koin instance
+    val navigationManager: NavigationManager = koin.get()
+    // tell to NavigationManager to use the navController
+    navigationManager.setNavController(navController)
+
     NavHost(
         navController = navController,
-        startDestination = Screen.OpeningMenuScreen.route
+        startDestination = Screen.OpeningMenuScreen.route,
     ) {
         composable(Screen.OpeningMenuScreen.route) {
-            TestOpeningMenuScreen(navController = navController, innerPadding = innerPadding)
+            val viewModel: OpeningMenuViewModel = koinViewModel {
+                    parametersOf(navController) }
+            OpeningMenuScreen(viewModel, innerPadding)
         }
+
         composable(Screen.PreferencesScreen.route) {
             TestPreferencesScreen(navController = navController, innerPadding = innerPadding)
         }
+
         composable(Screen.GameScreen.route) {
             TestGameScreen(navController = navController, innerPadding = innerPadding)
         }

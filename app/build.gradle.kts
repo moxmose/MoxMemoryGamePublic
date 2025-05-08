@@ -51,15 +51,15 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:3.4.5")
 
     // Navigation for Compose
-    implementation("androidx.navigation:navigation-compose:2.8.6")
+    implementation("androidx.navigation:navigation-compose:2.9.0")
 
     //implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
     // Lifecycles only (without ViewModel or LiveData)
     //implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
     // Lifecycle utilities for Compose
     //implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.5.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
     //libs.androidx.lifecycle.viewmodel.compose)
 
     implementation(libs.androidx.core.ktx)
@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.runtime.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
