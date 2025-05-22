@@ -14,9 +14,10 @@ val myAppModule = module {
         TimerViewModel()
     }
 
-    viewModel {
+    viewModel { (navController: NavHostController) ->
         GameViewModel(
-            get()
+            navController = navController,
+            timerViewModel = get()
         )
     }
 

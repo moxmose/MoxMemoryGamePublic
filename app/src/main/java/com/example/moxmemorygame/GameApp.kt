@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.navigation.NavHostController
 import com.example.moxmemorygame.ui.GameCard
 import com.example.moxmemorygame.ui.GameCardArray
 import com.example.moxmemorygame.ui.GameCardImages
@@ -51,9 +53,11 @@ import com.example.moxmemorygame.ui.formatDuration
 import org.koin.androidx.compose.getViewModel
 
 @Composable
-fun MainApp(
-    appViewModel: GameViewModel = getViewModel(),
-    modifier: Modifier = Modifier
+fun GameApp(
+    gameViewModel: GameViewModel = getViewModel(),
+//    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    innerPadding: PaddingValues
 ) {
     // vals to enable sounds
     val localSoundContext = LocalContext.current
@@ -65,73 +69,83 @@ fun MainApp(
     val successSound = { SoundUtils.playSound(localSoundContext, R.raw.short_success_sound_glockenspiel_treasure_videogame) }
     val winSound = { SoundUtils.playSound(localSoundContext, R.raw.brass_fanfare_with_timpani_and_winchimes_reverberated) }
 
-    val tablePlay = appViewModel.tablePlay
+    val tablePlay = gameViewModel.tablePlay
 
     val checkPlayCardTurned = {x: Int, y: Int ->
-        appViewModel.checkGamePlayCardTurned(x=x, y=y,
+        gameViewModel.checkGamePlayCardTurned(x=x, y=y,
             flipSound=flipSound, pauseSound=pauseSound, failSound=failSound,
             successSound=successSound, winSound=winSound) }
 
-    val actionOnPause = { appViewModel.setResetPause(); pauseSound() }
-    val actionOnReset = { appViewModel.setResetReset(); pauseSound() }
+    val actionOnPause = { gameViewModel.setResetPause(); pauseSound() }
+    val actionOnReset = { gameViewModel.setResetReset(); pauseSound() }
 //    val actionOnResetProceed = { appViewModel.resetProceed(); resetSound() }
-    val actionOnResetProceed = { appViewModel.resetProceed(); appViewModel.setPlayResetSound() }
-    val gameCardImages = appViewModel.gameCardImages
-    val gamePaused = appViewModel.gamePaused.value
-    val gameResetRequest = appViewModel.gameResetRequest.value
-    val gameWon = appViewModel.gameWon.value
-    val gamePlayResetSound = appViewModel.gamePlayResetSound
-    val resetPlayResetSound = { appViewModel.resetPlayResetSound(resetSound) }
+//    val actionOnResetProceed = { appViewModel.resetProceed(); appViewModel.setPlayResetSound() }
+    val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); gameViewModel; gameViewModel.setPlayResetSound() }
 
-    val score = appViewModel.score.intValue
-    val moves = appViewModel.moves.intValue
-    val timeGame by appViewModel.currentTime.collectAsState()
+    val gameCardImages = gameViewModel.gameCardImages
+    val gamePaused = gameViewModel.gamePaused.value
+    val gameResetRequest = gameViewModel.gameResetRequest.value
+    val gameWon = gameViewModel.gameWon.value
+    val gamePlayResetSound = gameViewModel.gamePlayResetSound
+    val resetPlayResetSound = { gameViewModel.resetPlayResetSound(resetSound) }
+
+    val score = gameViewModel.score.intValue
+    val moves = gameViewModel.moves.intValue
+    val timeGame by gameViewModel.currentTime.collectAsState()
     val timeGameString = timeGame.formatDuration()
 
-    BackgroundImg()
-    Column(modifier = modifier) {
-        Head(
-            score = score,
-            moves = moves,
-            timeGame = timeGameString
-        )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding), // Apply innerPadding here
+        contentAlignment = Alignment.Center
+    ) {
+        BackgroundImg()
+        Column(modifier = modifier) {
+            Head(
+                score = score,
+                moves = moves,
+                timeGame = timeGameString
+            )
 
-        if(gamePlayResetSound) {
-            resetPlayResetSound()
-        }
+            if (gamePlayResetSound) {
+                resetPlayResetSound()
+            }
 
-        if (gamePaused)
-            if (gameWon)
-                GameWonDialog(
-                    onDismissRequest = actionOnResetProceed,
-                    score = score
-                )
-            else
-                if (gameResetRequest)
-                    ResetDialog(
-                        onDismissRequest = actionOnReset,
-                        onConfirmation = actionOnResetProceed
+            if (gamePaused)
+                if (gameWon)
+                    GameWonDialog(
+                        onDismissRequest = actionOnResetProceed,
+                        score = score
                     )
                 else
-                    PauseDialog(
-                        onDismissRequest = actionOnPause
-                    )
+                    if (gameResetRequest)
+                        ResetDialog(
+                            onDismissRequest = actionOnReset,
+                            onConfirmation = actionOnResetProceed
+                        )
+                    else
+                        PauseDialog(
+                            onDismissRequest = actionOnPause
+                        )
 
-        ShowTablePlay(
-            xDim = BOARD_WIDTH,
-            yDim = BOARD_HEIGHT,
-            tablePlay = tablePlay,
-            gameCardImages = gameCardImages,
-            checkPlayCardTurned = checkPlayCardTurned,
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(1f)
-        )
+            ShowTablePlay(
+                xDim = BOARD_WIDTH,
+                yDim = BOARD_HEIGHT,
+                tablePlay = tablePlay,
+                gameCardImages = gameCardImages,
+                checkPlayCardTurned = checkPlayCardTurned,
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1f)
+            )
 
-        Tail(
-            actionOnPause = actionOnPause,
-            actionOnReset = actionOnReset
-        )
+            Tail(
+                actionOnPause = actionOnPause,
+                actionOnReset = actionOnReset
+            )
+            Spacer(modifier = Modifier.padding(5.dp))
+        }
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -15,7 +16,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
+class GameViewModel(
+    private val navController: NavHostController,
+    private val timerViewModel: TimerViewModel
+): ViewModel() {
     private val _score = mutableIntStateOf(0)   // player's actual score
     val score get() = _score
 
@@ -107,6 +111,23 @@ class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
                 coupled = false
             )
 
+    }
+
+    /**
+     * Navigate to the OpeningMenuScreen.
+     */
+    fun onResetAndGoToOpeningMenu() {
+        // 1. Perform game reset logic here
+        // Example: resetTimer(), clearBoard(), etc.
+
+        // 2. Navigate to OpeningMenuScreen
+        // Option A: Navigate to a specific route and clear back stack
+        navController.navigate(Screen.OpeningMenuScreen.route) {
+            popUpTo(navController.graph.startDestinationId) { // Or a specific route if OpeningMenu isn't the start
+                inclusive = true
+            }
+            launchSingleTop = true // Avoid multiple instances of OpeningMenuScreen
+        }
     }
 
     /**
@@ -376,6 +397,5 @@ class GameViewModel(private val timerViewModel: TimerViewModel): ViewModel() {
             timerViewModel.stopAndAwaitTimerCompletion()
         }
     }
-
 }
 

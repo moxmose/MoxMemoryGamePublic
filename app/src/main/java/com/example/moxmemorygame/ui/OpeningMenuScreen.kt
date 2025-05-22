@@ -57,7 +57,7 @@ fun OpeningMenuScreen(
                     .padding(16.dp)
                     .fillMaxWidth()
             ) {
-                Text(text = "START GAME")
+                Text(text = "START NEW GAME")
             }
             Button(
                 onClick = viewModel::onSettingsClicked,
