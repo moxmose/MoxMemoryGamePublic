@@ -80,7 +80,8 @@ fun GameApp(
     val actionOnReset = { gameViewModel.setResetReset(); pauseSound() }
 //    val actionOnResetProceed = { appViewModel.resetProceed(); resetSound() }
 //    val actionOnResetProceed = { appViewModel.resetProceed(); appViewModel.setPlayResetSound() }
-    val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); gameViewModel; gameViewModel.setPlayResetSound() }
+//    val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); gameViewModel; gameViewModel.setPlayResetSound() }
+    val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); }
 
     val gameCardImages = gameViewModel.gameCardImages
     val gamePaused = gameViewModel.gamePaused.value

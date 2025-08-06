@@ -53,6 +53,9 @@ dependencies {
     // Navigation for Compose
     implementation("androidx.navigation:navigation-compose:2.9.0")
 
+    // Datastore preferences
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+
     //implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
     // Lifecycles only (without ViewModel or LiveData)
     //implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")

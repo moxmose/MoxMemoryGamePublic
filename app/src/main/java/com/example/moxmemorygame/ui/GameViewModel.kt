@@ -317,14 +317,14 @@ class GameViewModel(
 
     /**
      * Sets the value of the `_gamePlayResetSound` LiveData to `true`, signaling that the game play
-     * reset sound should be played. This function is called both when the game is first started
-     * and when the game state is reset. It triggers the playback of a sound effect associated
+     * reset sound should be played. This function is called when state is reset in old model.
+     * It triggers the playback of a sound effect associated
      * with either the initial setup or a reset action.
      */
-    fun setPlayResetSound() {
+    /*fun setPlayResetSound() {
         _gamePlayResetSound.value = true
 
-    }
+    }*/
 
     /**
      * Plays the game reset sound and resets the internal sound played state.
