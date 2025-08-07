@@ -8,18 +8,48 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import com.example.moxmemorygame.AppSettingsDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class GameViewModel(
     private val navController: NavHostController,
-    private val timerViewModel: TimerViewModel
+    private val timerViewModel: TimerViewModel,
+    private val appSettingsDataStore: AppSettingsDataStore
 ): ViewModel() {
+    // Esponi le preferenze come StateFlow per osservarle in Compose
+    val playerName: StateFlow<String> = appSettingsDataStore.playerNameFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000), // Mantieni attivo per 5s dopo l'ultima sottoscrizione
+            initialValue = "Loading..." // Valore iniziale mentre carica
+        )
+
+    val cardSet: StateFlow<String> = appSettingsDataStore.cardSetFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "default_set" // Valore iniziale
+        )
+
+    val backgroundPreference: StateFlow<String> = appSettingsDataStore.backgroundPreferenceFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "random" // Valore iniziale
+        )
+
+
+
+
     private val _score = mutableIntStateOf(0)   // player's actual score
     val score get() = _score
 
@@ -53,6 +83,66 @@ class GameViewModel(
     init {
         resetGame()
     }
+/*
+    // Funzioni nel ViewModel per aggiornare le preferenze (opzionale, potresti farlo direttamente dalla UI
+    // ma è buona pratica centralizzare la logica nel ViewModel)
+    fun updatePlayerName(newName: String) {
+        viewModelScope.launch {
+            appSettingsDataStore.savePlayerName(newName)
+        }
+    }
+
+    fun updateCardSet(newSet: String) {
+        viewModelScope.launch {
+            appSettingsDataStore.saveCardSet(newSet)
+        }
+    }
+
+    fun updateBackgroundPreference(newPreference: String) {
+        viewModelScope.launch {
+            appSettingsDataStore.saveBackgroundPreference(newPreference)
+        }
+    }
+
+ */
+
+    /*
+    init {
+        // Qui puoi reagire ai cambiamenti delle preferenze se necessario
+        // per esempio, caricare un set di carte diverso quando cardSet cambia.
+        viewModelScope.launch {
+            cardSet.collect { currentCardSet ->
+                // Logica per caricare/aggiornare le immagini delle carte in base a currentCardSet
+                loadCardImagesForSet(currentCardSet)
+            }
+        }
+        viewModelScope.launch {
+            backgroundPreference.collect { currentBackgroundPref ->
+                // Logica per aggiornare lo sfondo
+                updateGameBackground(currentBackgroundPref)
+            }
+        }
+    }
+
+    private fun loadCardImagesForSet(setName: String) {
+        // Implementa la logica per caricare le immagini corrette
+        // in base a setName (es. "set1", "set2")
+        // e aggiorna gameCardImages
+        if (setName == "set1") {
+            // gameCardImages.value = ...immagini del set 1...
+        } else {
+            // gameCardImages.value = ...immagini del set 2...
+        }
+        // Potrebbe essere necessario riavviare o resettare il gioco qui
+    }
+
+    private fun updateGameBackground(preference: String) {
+        // Implementa la logica per cambiare lo sfondo
+        // Se "random", scegli uno sfondo casuale.
+        // Se "fixed_id_X", usa lo sfondo specifico.
+    }
+
+     */
 
     /**
      * Resets the game to its initial state.

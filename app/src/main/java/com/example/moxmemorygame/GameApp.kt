@@ -51,10 +51,12 @@ import com.example.moxmemorygame.ui.BOARD_WIDTH
 import com.example.moxmemorygame.ui.BOARD_HEIGHT
 import com.example.moxmemorygame.ui.formatDuration
 import org.koin.androidx.compose.getViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun GameApp(
-    gameViewModel: GameViewModel = getViewModel(),
+//    gameViewModel: GameViewModel = getViewModel(),
+    gameViewModel: GameViewModel = koinViewModel(),
 //    navController: NavHostController,
     modifier: Modifier = Modifier,
     innerPadding: PaddingValues

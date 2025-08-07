@@ -7,7 +7,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.GameApp
-import com.example.moxmemorygame.TestPreferencesScreen
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import org.koin.core.context.GlobalContext
@@ -36,7 +35,9 @@ fun NavGraph(
         }
 
         composable(Screen.PreferencesScreen.route) {
-            TestPreferencesScreen(navController = navController, innerPadding = innerPadding)
+//            TestPreferencesScreen(navController = navController, innerPadding = innerPadding)
+            val viewModel: PreferencesViewModel = koinViewModel { parametersOf(navController) }
+            PreferencesScreen(  preferencesViewModel = viewModel  , innerPadding = innerPadding)
         }
 
         composable(Screen.GameScreen.route) {
