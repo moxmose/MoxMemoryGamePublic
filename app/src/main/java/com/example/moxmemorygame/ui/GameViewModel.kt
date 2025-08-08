@@ -26,26 +26,11 @@ class GameViewModel(
     private val appSettingsDataStore: AppSettingsDataStore
 ): ViewModel() {
     // Esponi le preferenze come StateFlow per osservarle in Compose
-    val playerName: StateFlow<String> = appSettingsDataStore.playerNameFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000), // Mantieni attivo per 5s dopo l'ultima sottoscrizione
-            initialValue = "Loading..." // Valore iniziale mentre carica
-        )
+    val playerName: StateFlow<String> = appSettingsDataStore.playerName
 
-    val cardSet: StateFlow<String> = appSettingsDataStore.cardSetFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "default_set" // Valore iniziale
-        )
+    val cardSet: StateFlow<String> = appSettingsDataStore.cardSet
 
-    val backgroundPreference: StateFlow<String> = appSettingsDataStore.backgroundPreferenceFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "random" // Valore iniziale
-        )
+    val backgroundPreference: StateFlow<String> = appSettingsDataStore.backgroundPreference
 
 
 

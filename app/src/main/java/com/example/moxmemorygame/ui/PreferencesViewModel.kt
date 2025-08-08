@@ -15,26 +15,12 @@ class PreferencesViewModel(
     private val appSettingsDataStore: AppSettingsDataStore // Inietta AppSettingsDataStore
 ) : ViewModel() {
 
-    val playerName: StateFlow<String> = appSettingsDataStore.playerNameFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "" // O un valore di caricamento appropriato
-        )
+    val playerName: StateFlow<String> = appSettingsDataStore.playerName
 
-    val cardSet: StateFlow<String> = appSettingsDataStore.cardSetFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "default_set"
-        )
+    val cardSet: StateFlow<String> = appSettingsDataStore.cardSet
 
-    val backgroundPreference: StateFlow<String> = appSettingsDataStore.backgroundPreferenceFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "random"
-        )
+    val backgroundPreference: StateFlow<String> = appSettingsDataStore.backgroundPreference
+
 
     fun updatePlayerName(newName: String) {
         if(newName.length <= PLAYERNAME_MAX_LENGTH) {

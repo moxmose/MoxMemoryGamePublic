@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -28,6 +30,8 @@ fun OpeningMenuScreen(
     viewModel: OpeningMenuViewModel = koinViewModel(),
     innerPadding: PaddingValues
 ) {
+    val currentBackground by viewModel.backgroundPreference.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -95,7 +99,10 @@ fun BackgroundImg() {
 @Preview
 @Composable
 fun OpeningMenuScreenPreview() {
-    val fakeViewModel = OpeningMenuViewModel(navController = rememberNavController())
+    val fakeViewModel = OpeningMenuViewModel(
+        navController = rememberNavController(),
+        appSettingsDataStore = TODO()
+    )
     val fakePadding = PaddingValues(16.dp)
     OpeningMenuScreen(fakeViewModel, fakePadding)
 }
