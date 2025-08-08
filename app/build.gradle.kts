@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -55,6 +56,13 @@ dependencies {
 
     // Datastore preferences
     implementation("androidx.datastore:datastore-preferences:1.1.7")
+
+    // Kotlinx Serialization
+    implementation(libs.kotlinx.serialization.json)
+//    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // Datastore preferences
+    implementation(libs.androidx.datastore.preferences)
 
     //implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
     // Lifecycles only (without ViewModel or LiveData)
