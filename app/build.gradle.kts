@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.moxmemorygame"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.moxmemorygame"
