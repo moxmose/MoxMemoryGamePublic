@@ -2,13 +2,15 @@ package com.example.moxmemorygame.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavHostController
-import com.example.moxmemorygame.AppSettingsDataStore
+import com.example.moxmemorygame.IAppSettingsDataStore
+import com.example.moxmemorygame.RealAppSettingsDataStore
 import kotlinx.coroutines.flow.StateFlow
 
 class OpeningMenuViewModel(
     private val navController: NavHostController,
-    private val appSettingsDataStore: AppSettingsDataStore // Inject AppSettingsDataStore
-) : ViewModel() {
+//    private val appSettingsDataStore: RealAppSettingsDataStore // Inject AppSettingsDataStore
+    private val appSettingsDataStore: IAppSettingsDataStore // Inject AppSettingsDataStore
+    ) : ViewModel() {
 
     fun navigate(destination: String) {
         navController.navigate(destination)
@@ -26,7 +28,7 @@ class OpeningMenuViewModel(
         navController.navigate(Screen.PreferencesScreen.route)
     }
 
-    val backgroundPreference: StateFlow<String> = appSettingsDataStore.backgroundPreference
+    val backgroundPreference: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
     // ... altra logica
 
 }

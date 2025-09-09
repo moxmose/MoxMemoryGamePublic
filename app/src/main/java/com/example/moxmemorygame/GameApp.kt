@@ -1,5 +1,6 @@
 package com.example.moxmemorygame
 
+import android.content.Context
 import android.os.Build
 import android.view.SoundEffectConstants
 import androidx.annotation.DrawableRes
@@ -28,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +43,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.navigation.NavHostController
 import com.example.moxmemorygame.ui.GameCard
 import com.example.moxmemorygame.ui.GameCardArray
 import com.example.moxmemorygame.ui.GameCardImages
@@ -50,18 +51,17 @@ import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.BOARD_WIDTH
 import com.example.moxmemorygame.ui.BOARD_HEIGHT
 import com.example.moxmemorygame.ui.formatDuration
+import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.compose.getViewModel
 import org.koin.androidx.compose.koinViewModel
+import kotlin.random.Random
 
 @Composable
 fun GameApp(
-//    gameViewModel: GameViewModel = getViewModel(),
     gameViewModel: GameViewModel = koinViewModel(),
-//    navController: NavHostController,
     modifier: Modifier = Modifier,
     innerPadding: PaddingValues
 ) {
-    // vals to enable sounds
     val localSoundContext = LocalContext.current
     val clickSound = { SoundUtils.playSound(localSoundContext, SoundEffectConstants.CLICK) }
     val flipSound = { SoundUtils.playSound(localSoundContext, R.raw.flipcard) }
@@ -80,9 +80,6 @@ fun GameApp(
 
     val actionOnPause = { gameViewModel.setResetPause(); pauseSound() }
     val actionOnReset = { gameViewModel.setResetReset(); pauseSound() }
-//    val actionOnResetProceed = { appViewModel.resetProceed(); resetSound() }
-//    val actionOnResetProceed = { appViewModel.resetProceed(); appViewModel.setPlayResetSound() }
-//    val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); gameViewModel; gameViewModel.setPlayResetSound() }
     val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); }
 
     val gameCardImages = gameViewModel.gameCardImages
@@ -97,13 +94,16 @@ fun GameApp(
     val timeGame by gameViewModel.currentTime.collectAsState()
     val timeGameString = timeGame.formatDuration()
 
+    // Recupera selectedBackgrounds dal ViewModel (o da dove è appropriato)
+    val selectedBackgrounds by gameViewModel.selectedBackgrounds.collectAsState() // Assumendo che GameViewModel esponga questo
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding), // Apply innerPadding here
+            .padding(innerPadding), 
         contentAlignment = Alignment.Center
     ) {
-        BackgroundImg()
+        BackgroundImg(selectedBackgrounds = gameViewModel.selectedBackgrounds) // Passa lo StateFlow
         Column(modifier = modifier) {
             Head(
                 score = score,
@@ -152,9 +152,6 @@ fun GameApp(
     }
 }
 
-/**
- * Show points and statistics
- */
 @Composable
 fun Head(
     score: Int,
@@ -192,9 +189,6 @@ fun Head(
     }
 }
 
-/**
- * Show the table - all the magic is delegated to Compose
- */
 @Composable
 fun ShowTablePlay(
     xDim: Int,
@@ -240,9 +234,6 @@ fun ShowTablePlay(
     }
 }
 
-/**
- * Tail shows buttons to pause and reset
- */
 @Composable
 fun Tail(
     actionOnPause: () -> Unit,
@@ -282,23 +273,58 @@ fun Tail(
     }
 }
 
-/**
- * Set background
- */
 @Composable
-fun BackgroundImg(modifier: Modifier = Modifier) {
-    Image(
-        painter = painterResource(id = R.drawable.background_00),
-        contentDescription = null,
-        alpha = 0.5f,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxSize()
-    )
+fun BackgroundImg(
+    selectedBackgrounds: StateFlow<Set<String>>,
+    modifier: Modifier = Modifier.fillMaxSize(), // Default modifier
+    alpha: Float = 0.5f // Default alpha
+) {
+    val context = LocalContext.current
+    val currentSelectedSet by selectedBackgrounds.collectAsState()
+
+    val backgroundNameToDisplay = remember(currentSelectedSet) {
+        if (currentSelectedSet.isNotEmpty()) {
+            currentSelectedSet.randomOrNull() ?: "background_00" // Fallback se randomOrNull dà null (improbabile)
+        } else {
+            "background_00" // Default se il set è vuoto
+        }
+    }
+
+    val drawableId = remember(backgroundNameToDisplay, context) {
+        try {
+            context.resources.getIdentifier(
+                backgroundNameToDisplay,
+                "drawable",
+                context.packageName
+            )
+        } catch (e: Exception) {
+            // Fallback in caso di errore nel trovare la risorsa
+            R.drawable.background_00 // Assicurati che R.drawable.background_00 esista
+        }
+    }
+
+    if (drawableId != 0) { // Controlla se l'ID è valido
+        Image(
+            painter = painterResource(id = drawableId),
+            contentDescription = null,
+            alpha = alpha,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+        )
+    } else {
+        // Opzionale: mostra un placeholder o un colore di sfondo se l'ID non è valido
+        // Ad esempio, per R.drawable.background_00 se non è stato trovato
+        Image(
+            painter = painterResource(id = R.drawable.background_00), // Assicurati che esista
+            contentDescription = "Default background due to error",
+            alpha = alpha,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+        )
+    }
 }
 
-/**
- * Pause Dialog
- */
+
 @Composable
 fun PauseDialog(
     onDismissRequest: () -> Unit,
@@ -310,8 +336,6 @@ fun PauseDialog(
             dismissOnClickOutside = false
         )
     ) {
-        // Draw a rectangle shape with rounded corners inside the dialog
-
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -319,8 +343,7 @@ fun PauseDialog(
                 .padding(16.dp)
                 .clickable { onDismissRequest() }
             ,
-            shape = //RoundedCornerShape(16.dp),
-            RoundedCornerShape(
+            shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 1.dp,
                 bottomStart = 1.dp,
@@ -337,8 +360,6 @@ fun PauseDialog(
                     painter = painterResource(R.drawable.card_pause),
                     contentDescription = "PAUSE",
                     contentScale = ContentScale.Fit,
-                    //modifier = Modifier
-                    //    .height(160.dp)
                 )
                 Text(
                     text = "CLICK TO EXIT PAUSE",
@@ -361,8 +382,6 @@ fun ResetDialog(
             dismissOnClickOutside = false
         )
     ) {
-        // Draw a rectangle shape with rounded corners inside the dialog
-
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -431,9 +450,6 @@ fun ResetDialog(
     }
 }
 
-/**
- * Pause Dialog
- */
 @Composable
 fun GameWonDialog(
     onDismissRequest: () -> Unit,
@@ -446,8 +462,6 @@ fun GameWonDialog(
             dismissOnClickOutside = false
         )
     ) {
-        // Draw a rectangle shape with rounded corners inside the dialog
-
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -480,7 +494,6 @@ fun GameWonDialog(
                 Text(
                     text = "FINAL SCORE: $score",
                     fontWeight = FontWeight.Bold,
-                    //modifier = Modifier.padding(16.dp),
                 )
                 Text(
                     text = "CLICK TO PLAY AGAIN",
@@ -495,9 +508,7 @@ fun GameWonDialog(
 @RequiresApi(Build.VERSION_CODES.HONEYCOMB_MR2)
 @Composable
 fun Testing(
-//    navigateToDetail: (Long) -> Unit,
     tablePlay: GameCardArray,
-    //tablePlay: Array<Array<MutableState<GameCard>>>,
     setPlayCardTurned: (Int, Int, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -538,13 +549,11 @@ fun Testing(
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {
-                        //setPlayCardTurned(0, 0, true)
                         setPlayCardTurned(0, 1, !(tablePlay.cardsArray[0][1].value.turned))
                     }
                 )
 
             }
-            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
             Text(text = tablePlay.cardsArray[0][1].value.turned.toString())
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
@@ -553,13 +562,11 @@ fun Testing(
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {
-                        //setPlayCardTurned(0, 0, true)
                         setPlayCardTurned(0, 0, !(tablePlay.cardsArray[0][0].value.turned))
                     }
                 )
 
             }
-           // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
             Text(text = tablePlay.cardsArray[0][0].value.turned.toString())
         }
     }
@@ -569,9 +576,7 @@ fun Testing(
 
 @Composable
 fun TestingDelayUsingList(
-//    navigateToDetail: (Long) -> Unit,
     tablePlay: GameCardArray,
-    //tablePlay: Array<Array<MutableState<GameCard>>>,
     setPlayCardTurned: (Int, Int, Boolean) -> Unit,
     testList: SnapshotStateList<GameCard>,
     testValue: MutableState<GameCard>,
@@ -615,13 +620,11 @@ fun TestingDelayUsingList(
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.clickable {
-                        //setPlayCardTurned(0, 0, true)
                         testListFun(1)
                     }
                 )
 
             }
-            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
             Text(text = tablePlay.cardsArray[0][1].value.turned.toString())
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
@@ -635,7 +638,6 @@ fun TestingDelayUsingList(
                 )
 
             }
-            // Text(text = "${tablePlay.cardsArray[0][0].turned.toString()}")
             Text(text = "${tablePlay.cardsArray[0][0].value.turned}")
         }
     }
@@ -654,7 +656,7 @@ fun TestingPreview() {
         val tablePlay = GameCardArray()
         ShowTablePlay(
             xDim = BOARD_WIDTH,
-            yDim = 4,//Y_BOARD_DIM,
+            yDim = 4,
             tablePlay = tablePlay,
             gameCardImages = gameCardImages,
             checkPlayCardTurned = {x, y -> },

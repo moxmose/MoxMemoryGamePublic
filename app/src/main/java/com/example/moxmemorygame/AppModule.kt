@@ -22,7 +22,8 @@ val myAppModule = module {
 
     single<CoroutineScope>(named("ApplicationScope")) {CoroutineScope(SupervisorJob() + Dispatchers.Default)}
     // AppSettinfDataStore can now the scope or use its default
-    single { AppSettingsDataStore(androidContext()/*, get(named("ApplicationScope"))*/) }
+    //single { RealAppSettingsDataStore(androidContext()/*, get(named("ApplicationScope"))*/) }
+    single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext()/*, get(named("ApplicationScope"))*/) }
 
     viewModel { (navController: NavHostController) ->
         GameViewModel(
