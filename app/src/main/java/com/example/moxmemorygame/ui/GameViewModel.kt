@@ -21,7 +21,7 @@ class GameViewModel(
     private val appSettingsDataStore: IAppSettingsDataStore
 ): ViewModel() {
     val playerName: StateFlow<String> = appSettingsDataStore.playerName
-    val cardSet: StateFlow<String> = appSettingsDataStore.cardSet // Potrebbe necessitare modifiche per selezione multipla
+    val selectedCards: StateFlow<Set<String>> = appSettingsDataStore.selectedCards // Potrebbe necessitare modifiche per selezione multipla
     // Rinominato da backgroundPreference a selectedBackgrounds per coerenza
     val selectedBackgrounds: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
 

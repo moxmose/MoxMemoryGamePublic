@@ -28,15 +28,24 @@ class RealAppSettingsDataStore(
 
     companion object {
         val PLAYER_NAME_KEY = stringPreferencesKey("player_name")
-        val CARD_SET_KEY = stringPreferencesKey("card_set")
+        // Rimosso CARD_SET_KEY
         // Modificata la chiave per gli sfondi selezionati
         val SELECTED_BACKGROUNDS_KEY = stringSetPreferencesKey("selected_backgrounds")
+        // Nuova chiave per le carte selezionate
+        val SELECTED_CARDS_KEY = stringSetPreferencesKey("selected_cards")
 
         // Constants for default values
         const val DEFAULT_PLAYER_NAME = "Default Player"
-        const val DEFAULT_CARD_SET = "default_set"
+        // Rimosso DEFAULT_CARD_SET
         // Modificato il valore di default per gli sfondi (ora un Set, il primo sfondo come default)
         val DEFAULT_SELECTED_BACKGROUNDS = setOf("background_00")
+        // Valore di default per le carte selezionate (tutte le carte "complex" da img_c_00 a img_c_19)
+        val DEFAULT_SELECTED_CARDS = setOf(
+            "img_c_00", "img_c_01", "img_c_02", "img_c_03", "img_c_04",
+            "img_c_05", "img_c_06", "img_c_07", "img_c_08", "img_c_09",
+            "img_c_10", "img_c_11", "img_c_12", "img_c_13", "img_c_14",
+            "img_c_15", "img_c_16", "img_c_17", "img_c_18", "img_c_19"
+        )
     }
 
     private val dataStore = context.dataStore
@@ -64,28 +73,7 @@ class RealAppSettingsDataStore(
         }
     }
 
-    override val cardSet: StateFlow<String> = dataStore.data // Potrebbe necessitare di modifiche per selezione multipla
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
-        .map { preferences ->
-            preferences[CARD_SET_KEY] ?: DEFAULT_CARD_SET
-        }
-        .stateIn(
-            scope = externalScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = DEFAULT_CARD_SET
-        )
-
-    override suspend fun saveCardSet(newSet: String) { // Potrebbe necessitare di modifiche per selezione multipla
-        dataStore.edit { settings ->
-            settings[CARD_SET_KEY] = newSet
-        }
-    }
+    // Rimossa la vecchia implementazione di cardSet e saveCardSet
 
     // Flusso per leggere gli sfondi selezionati
     override val selectedBackgrounds: StateFlow<Set<String>> = dataStore.data
@@ -115,6 +103,38 @@ class RealAppSettingsDataStore(
     override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
         dataStore.edit { settings ->
             settings[SELECTED_BACKGROUNDS_KEY] = backgrounds
+        }
+    }
+
+    // Flusso per leggere le carte selezionate
+    override val selectedCards: StateFlow<Set<String>> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            val currentSelection = preferences[SELECTED_CARDS_KEY]
+            // Se non ci sono carte salvate o il set è vuoto, usa il default.
+            // Questo assicura che ci sia sempre una selezione che rispetti il minimo richiesto.
+            if (currentSelection.isNullOrEmpty()) {
+                DEFAULT_SELECTED_CARDS // Ora corretto con img_c_00 a img_c_19
+            } else {
+                currentSelection
+            }
+        }
+        .stateIn(
+            scope = externalScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = DEFAULT_SELECTED_CARDS // Ora corretto con img_c_00 a img_c_19
+        )
+
+    // Funzione per salvare le carte selezionate
+    override suspend fun saveSelectedCards(selectedCards: Set<String>) {
+        dataStore.edit { settings ->
+            settings[SELECTED_CARDS_KEY] = selectedCards
         }
     }
 }
