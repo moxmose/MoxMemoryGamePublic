@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.ui
 
+import android.util.Log // Aggiunto per i log
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
@@ -8,21 +9,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.IAppSettingsDataStore
-import com.example.moxmemorygame.RealAppSettingsDataStore
+import com.example.moxmemorygame.RealAppSettingsDataStore // Per fallback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first // Aggiunto per .first()
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class GameViewModel(
     private val navController: NavHostController,
     private val timerViewModel: TimerViewModel,
-    private val appSettingsDataStore: IAppSettingsDataStore
+    private val appSettingsDataStore: IAppSettingsDataStore,
+    private val resourceNameToId: (String) -> Int // Iniezione della lambda per conversione nome->ID
 ): ViewModel() {
     val playerName: StateFlow<String> = appSettingsDataStore.playerName
-    val selectedCards: StateFlow<Set<String>> = appSettingsDataStore.selectedCards // Potrebbe necessitare modifiche per selezione multipla
-    // Rinominato da backgroundPreference a selectedBackgrounds per coerenza
+    // selectedCards è usato in loadAndShuffleCards, ma non esposto direttamente se non necessario
+    // val selectedCards: StateFlow<Set<String>> = appSettingsDataStore.selectedCards
     val selectedBackgrounds: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
 
     private val _score = mutableIntStateOf(0)
@@ -38,11 +41,11 @@ class GameViewModel(
     private val noLastMove = Pair(-1, -1)
     private var cardInPlay: Boolean = false
 
-    private val _tablePlay = GameCardArray()
+    private val _tablePlay = GameCardArray() // GameCard.id rimane Int
     val tablePlay: GameCardArray get() = _tablePlay
 
     @DrawableRes
-    private lateinit var _gameCardImages: List<Int>
+    private lateinit var _gameCardImages: List<Int> // Rimane List<Int>, conterrà gli ID risorsa reali
     val gameCardImages get() = _gameCardImages
 
     val currentTime = timerViewModel.elapsedSeconds
@@ -53,37 +56,84 @@ class GameViewModel(
     var gameWon: MutableState<Boolean> = mutableStateOf(false)
 
     init {
-        resetGame()
+        Log.d("GameVM", "init - Calling resetGame()")
+        resetGame() // resetGame ora lancia una coroutine
     }
 
     private fun resetGame() {
-        resetAndShuffleImages()
-        _score.intValue = 0
-        _moves.intValue = 0
-        lastMove = Pair(-1,-1)
-        cardInPlay = false
-        _gamePlayResetSound.value = true
-        gamePaused.value = false
-        gameResetRequest.value = false
-        gameWon.value = false
-        timerViewModel.resetTimer()
-        timerViewModel.startTimer()
-        timeOfLastMove = 0L
+        Log.d("GameVM", "resetGame - Starting game reset process")
+        viewModelScope.launch {
+            Log.d("GameVM", "resetGame - Coroutine launched, calling loadAndShuffleCards()")
+            loadAndShuffleCards() // Carica e mescola le carte basate sulle preferenze
+            
+            Log.d("GameVM", "resetGame - loadAndShuffleCards() completed, proceeding with main thread state reset")
+            // Il resto del reset avviene sul thread principale dopo il caricamento delle carte
+            withContext(Dispatchers.Main) {
+                _score.intValue = 0
+                _moves.intValue = 0
+                lastMove = noLastMove
+                cardInPlay = false
+                _gamePlayResetSound.value = true
+                gamePaused.value = false
+                gameResetRequest.value = false
+                gameWon.value = false
+                timerViewModel.resetTimer()
+                timerViewModel.startTimer()
+                timeOfLastMove = 0L
+                Log.d("GameVM", "resetGame - Main thread state reset completed")
+            }
+        }
     }
 
-    private fun resetAndShuffleImages() {
-        val dim = BOARD_WIDTH * BOARD_HEIGHT /2 -1
-        _gameCardImages = GameCardImages().image.shuffled().subList(0,dim+1)
+    // Sostituisce la vecchia resetAndShuffleImages()
+    private suspend fun loadAndShuffleCards() {
+        Log.d("GameVM", "loadAndShuffleCards - Starting to load and shuffle cards")
+        val uniqueCardsNeeded = (BOARD_WIDTH * BOARD_HEIGHT) / 2
+        var userSelectedResourceNames = appSettingsDataStore.selectedCards.first()
+        Log.d("GameVM", "loadAndShuffleCards - Read from DataStore: $userSelectedResourceNames")
 
-        val gameCardIndexes = ((0..dim) + (0..dim)).shuffled()
-        var i = 0
-        for(x in (0 until BOARD_WIDTH))
-            for(y in (0 until BOARD_HEIGHT))
-            _tablePlay.cardsArray[x][y].value = GameCard(
-                id = gameCardIndexes[i++],
-                turned = false,
-                coupled = false
-            )
+        // Fallback robusto: se le carte selezionate sono insufficienti (improbabile data la logica in PreferencesViewModel)
+        // o se il set di default è l'unica fonte, assicurati di avere abbastanza carte.
+        if (userSelectedResourceNames.size < uniqueCardsNeeded) {
+            Log.w("GameVM", "loadAndShuffleCards - User selected cards insufficient (${userSelectedResourceNames.size} < $uniqueCardsNeeded). Falling back to default.")
+            userSelectedResourceNames = RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS
+        }
+        
+        // Prende il numero corretto di nomi di risorse uniche, mescolandole se ce ne sono di più.
+        val actualCardResourceNamesForGame = userSelectedResourceNames.shuffled().take(uniqueCardsNeeded)
+        Log.d("GameVM", "loadAndShuffleCards - Actual card resource names for game: $actualCardResourceNamesForGame")
+
+        // Converti i nomi delle risorse selezionate in ID risorsa reali usando la lambda iniettata
+        // _gameCardImages conterrà gli ID @DrawableRes effettivi.
+        _gameCardImages = actualCardResourceNamesForGame.map { resourceName -> resourceNameToId(resourceName) }
+        Log.d("GameVM", "loadAndShuffleCards - Converted to resource IDs (_gameCardImages): $_gameCardImages")
+
+        // Crea gli ID logici per le GameCard (da 0 a uniqueCardsNeeded - 1)
+        // Questi ID logici verranno usati come indici per _gameCardImages in GamePlayScreen
+        val logicalCardIds = (0 until uniqueCardsNeeded).toList()
+        val gameCardLogicalIdsForBoard = (logicalCardIds + logicalCardIds).shuffled()
+        Log.d("GameVM", "loadAndShuffleCards - Prepared logical IDs for board: $gameCardLogicalIdsForBoard")
+
+        // Popola il tabellone con GameCard che usano gli ID logici
+        // Questo deve avvenire sul thread principale se _tablePlay.cardsArray[x][y] è MutableState
+        // o se l'aggiornamento dell'UI dipende da queste modifiche immediatamente.
+        withContext(Dispatchers.Main) {
+            var i = 0
+            for(x in (0 until BOARD_WIDTH)) {
+                for(y in (0 until BOARD_HEIGHT)) {
+                     if (i < gameCardLogicalIdsForBoard.size) { // Controllo di sicurezza
+                        _tablePlay.cardsArray[x][y].value = GameCard(
+                            id = gameCardLogicalIdsForBoard[i++], // Usa l'ID logico
+                            turned = false,
+                            coupled = false
+                        )
+                    } else {
+                        // Questo non dovrebbe accadere se uniqueCardsNeeded * 2 == BOARD_WIDTH * BOARD_HEIGHT
+                    }
+                }
+            }
+            Log.d("GameVM", "loadAndShuffleCards - Finished populating _tablePlay on Main thread")
+        }
     }
 
     fun onResetAndGoToOpeningMenu() {
@@ -97,7 +147,7 @@ class GameViewModel(
 
     fun checkGamePlayCardTurned(x: Int, y: Int,
                                 flipSound: () -> Unit,
-                                pauseSound: () -> Unit,
+                                pauseSound: () -> Unit, // parametro non usato, ma mantenuto
                                 failSound: () -> Unit,
                                 successSound: () -> Unit,
                                 winSound: () -> Unit
@@ -128,12 +178,15 @@ class GameViewModel(
                 return
             } else {
                 setTablePlayCardTurned(x = x,y = y, newTurnedState = true)
+                // Il confronto degli ID rimane tra Int (ID logici)
                 if (_tablePlay.cardsArray[lastMove.first][lastMove.second].value.id ==
                     _tablePlay.cardsArray[x][y].value.id
                 ) {
                     refreshPointsRightCouple()
-                    tablePlay.cardsArray[lastMove.first][lastMove.second].value.coupled = true
-                    tablePlay.cardsArray[x][y].value.coupled = true
+                    // Ripristinato all'assegnazione diretta come indicato dall'utente
+                    _tablePlay.cardsArray[lastMove.first][lastMove.second].value.coupled = true
+                    _tablePlay.cardsArray[x][y].value.coupled = true
+                    
                     if(checkAllCardsCoupled()) {
                         winSound()
                         gameWon.value = true
@@ -163,6 +216,10 @@ class GameViewModel(
     private fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
         require(x in _tablePlay.cardsArray.indices) { "x coordinate is out of bounds" }
         require(y in _tablePlay.cardsArray[x].indices) { "y coordinate is out of bounds" }
+        // Assumendo che GameCard abbia un metodo copy o sia una data class e abbia un .copy(turned = newTurnedState)
+        // Se value.copyChangingTurned è un tuo metodo di estensione, va bene così.
+        // Altrimenti, se GameCard è una data class: _tablePlay.cardsArray[x][y].value = _tablePlay.cardsArray[x][y].value.copy(turned = newTurnedState)
+        // Mantengo il tuo codice originale qui:
         with(_tablePlay.cardsArray[x][y]) { value = value.copyChangingTurned(newTurnedState) }
     }
 
@@ -187,7 +244,7 @@ class GameViewModel(
     }
 
     fun resetProceed() {
-        resetGame()
+        resetGame() // Chiama la nuova resetGame che gestisce il caricamento asincrono
     }
 
     fun resetPlayResetSound(resetSound: () -> Unit) {
@@ -205,9 +262,9 @@ class GameViewModel(
         return timerPoints
     }
 
-    private fun refreshPointsWrongCouple() {_score.value -= (3 + getPointsResetTimeLastMove(0.4f))}
-    private fun refreshPointsRightCouple() {_score.value += (12 - getPointsResetTimeLastMove(0.2f))}
-    private fun refreshPointsNoCoupleSelected() {_score.value -= (1 + getPointsResetTimeLastMove(0.5f))}
+    private fun refreshPointsWrongCouple() {_score.intValue -= (3 + getPointsResetTimeLastMove(0.4f))}
+    private fun refreshPointsRightCouple() {_score.intValue += (12 - getPointsResetTimeLastMove(0.2f))}
+    private fun refreshPointsNoCoupleSelected() {_score.intValue -= (1 + getPointsResetTimeLastMove(0.5f))}
 
     override fun onCleared() {
         super.onCleared()

@@ -55,9 +55,9 @@ import com.example.moxmemorygame.BackgroundImg
 import com.example.moxmemorygame.IAppSettingsDataStore
 import com.example.moxmemorygame.R // Necessario per R.drawable.placeholder se usato
 import com.example.moxmemorygame.RealAppSettingsDataStore // Per i valori di default
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_HEIGHT
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH
+//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH // Lasciato come da utente
+//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_HEIGHT // Lasciato come da utente
+//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH // Lasciato come da utente
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -218,6 +218,23 @@ fun PreferencesScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
+                }
+
+                // --- Pulsante Back to Main Menu ---
+                item {
+                    Spacer(modifier = Modifier.height(16.dp)) // Aggiunge uno spazio prima del pulsante Indietro
+                    Button(
+                        onClick = { preferencesViewModel.onBackToMainMenuClicked() },
+                        shape = RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 1.dp,
+                            bottomStart = 1.dp,
+                            bottomEnd = 16.dp
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("BACK TO MAIN MENU")
+                    }
                 }
             }
             SnackbarHost(

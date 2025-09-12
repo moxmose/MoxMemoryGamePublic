@@ -1,6 +1,6 @@
 package com.example.moxmemorygame
 
-
+import android.util.Log // Aggiunto per Log.e nella lambda
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.NavigationManager
@@ -10,7 +10,7 @@ import com.example.moxmemorygame.ui.TimerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidContext // Modificato per usare androidContext() invece di androidApplication()
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -29,7 +29,20 @@ val myAppModule = module {
         GameViewModel(
             navController = navController,
             timerViewModel = get(),
-            appSettingsDataStore = get()
+            appSettingsDataStore = get(),
+            resourceNameToId = { resourceName ->
+                try {
+                    androidContext().resources.getIdentifier(
+                        resourceName,
+                        "drawable",
+                        androidContext().packageName
+                    )
+                } catch (e: Exception) {
+                    Log.e("KoinDI", "Resource ID not found for: $resourceName", e)
+                    0 // Restituisce 0 o un ID di placeholder valido se la risorsa non è trovata
+                      // Considera di definire una R.drawable.placeholder se vuoi un'immagine specifica per l'errore
+                }
+            }
         )
     }
 

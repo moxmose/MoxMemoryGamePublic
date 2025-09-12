@@ -1,12 +1,13 @@
 package com.example.moxmemorygame.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.IAppSettingsDataStore
 import com.example.moxmemorygame.RealAppSettingsDataStore // Importato per DEFAULT_SELECTED_CARDS
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_HEIGHT
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH
+//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_HEIGHT // Lasciato come fornito dall'utente
+//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH // Lasciato come fornito dall'utente
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -131,18 +132,6 @@ class PreferencesViewModel(
     }
 
     // La vecchia funzione `confirmCardSelections` è stata sostituita da `confirmCardSelectionsForSet`
-    // /**
-    //  * Funzione per confermare e salvare le selezioni delle carte fatte nel dialogo.
-    //  * La validazione del numero minimo di carte ([minRequiredCards]) è responsabilità del dialogo chiamante.
-    //  * @param confirmedSelection Il set di nomi di risorse delle carte selezionate dall'utente.
-    //  */
-    // fun confirmCardSelections(confirmedSelection: Set<String>) {
-    //     // Si assume che confirmedSelection rispetti già minRequiredCards grazie alla validazione nel Dialog
-    //     viewModelScope.launch {
-    //         _selectedCards.value = confirmedSelection
-    //         appSettingsDataStore.saveSelectedCards(confirmedSelection)
-    //     }
-    // }
 
     /**
      * Tenta di confermare e salvare le selezioni per un tipo specifico di carte (Refined o Simple).
@@ -161,10 +150,14 @@ class PreferencesViewModel(
 
             // 3. Valida contro il minimo richiesto.
             if (potentialNewGlobalSelection.size >= minRequiredCards) {
+                Log.d("PrefVM", "confirmCardSelectionsForSet - Valid selection. Potential new global selection: $potentialNewGlobalSelection")
                 _selectedCards.value = potentialNewGlobalSelection
+                Log.d("PrefVM", "confirmCardSelectionsForSet - Attempting to save to DataStore: $potentialNewGlobalSelection")
                 appSettingsDataStore.saveSelectedCards(potentialNewGlobalSelection)
+                Log.d("PrefVM", "confirmCardSelectionsForSet - Finished appSettingsDataStore.saveSelectedCards call for: $potentialNewGlobalSelection")
                 _cardSelectionError.value = null // Resetta errore se la selezione è valida
             } else {
+                Log.w("PrefVM", "confirmCardSelectionsForSet - Invalid selection. Needed $minRequiredCards, got ${potentialNewGlobalSelection.size}")
                 // La selezione non è valida (troppo poche carte in totale)
                 // Non salvare e imposta un messaggio di errore.
                 _cardSelectionError.value = "Minimum $minRequiredCards cards required in total. Current selection has ${potentialNewGlobalSelection.size}. Please select more cards."
@@ -179,6 +172,13 @@ class PreferencesViewModel(
      */
     fun clearCardSelectionError() {
         _cardSelectionError.value = null
+    }
+
+    /**
+     * Naviga indietro allo schermo precedente (presumibilmente il menu principale).
+     */
+    fun onBackToMainMenuClicked() {
+        navController.popBackStack()
     }
 
     companion object {
