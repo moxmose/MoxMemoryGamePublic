@@ -25,6 +25,13 @@ interface IAppSettingsDataStore {
     val selectedCards: StateFlow<Set<String>>
 
     /**
+     * A [StateFlow] indicating whether the DataStore has finished its initial load.
+     * `true` if the initial data has been read from disk, `false` otherwise.
+     * This can be used by consumers to wait for the data to be ready on cold starts.
+     */
+    val isDataLoaded: StateFlow<Boolean>
+
+    /**
      * Saves the player's name.
      * @param name The new name to save.
      */

@@ -27,17 +27,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-// import androidx.compose.material3.RadioButton // Rimosso perché non più usato
 import androidx.compose.material3.Text
-import androidx.compose.material3.SnackbarHost // Aggiunto per Snackbar
-import androidx.compose.material3.SnackbarHostState // Aggiunto per Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect // Aggiunto per Snackbar
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope // Aggiunto per Snackbar
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,19 +48,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties // Added for ImagePreviewDialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.BackgroundImg
 import com.example.moxmemorygame.IAppSettingsDataStore
-import com.example.moxmemorygame.R // Necessario per R.drawable.placeholder se usato
-import com.example.moxmemorygame.RealAppSettingsDataStore // Per i valori di default
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH // Lasciato come da utente
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_HEIGHT // Lasciato come da utente
-//import com.example.moxmemorygame.ui.GameCardClass.Companion.BOARD_WIDTH // Lasciato come da utente
+import com.example.moxmemorygame.RealAppSettingsDataStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch // Aggiunto per Snackbar
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,10 +66,13 @@ fun PreferencesScreen(
     innerPadding: PaddingValues
 ) {
     val playerName by preferencesViewModel.playerName.collectAsState()
+    // Per selectedBackgrounds, continuiamo a usare il flow interno al ViewModel per ora,
+    // dato che sembra funzionare correttamente e la sua gestione del default è leggermente diversa.
     val selectedBackgroundsFromVM by preferencesViewModel.selectedBackgrounds.collectAsState()
     val availableBackgrounds = preferencesViewModel.availableBackgrounds
 
-    val selectedCardsFromVM by preferencesViewModel.selectedCards.collectAsState()
+    // selectedCardsFromDataStore ora osserva direttamente il flow da appSettingsDataStore
+    val selectedCardsFromDataStore by preferencesViewModel.appSettingsDataStore.selectedCards.collectAsState()
     val availableCardResourceNames = preferencesViewModel.availableCardResourceNames
 
     var tempPlayerName by remember(playerName) { mutableStateOf(playerName) }
@@ -93,12 +91,11 @@ fun PreferencesScreen(
                     message = it,
                     duration = androidx.compose.material3.SnackbarDuration.Short
                 )
-                preferencesViewModel.clearCardSelectionError() // Resetta l'errore dopo averlo mostrato
+                preferencesViewModel.clearCardSelectionError() 
             }
         }
     }
 
-    // Calcoli per i conteggi delle carte
     val refinedCardResourceNames = remember(availableCardResourceNames) {
         availableCardResourceNames.filter { it.startsWith("img_c_") }
     }
@@ -106,11 +103,12 @@ fun PreferencesScreen(
         availableCardResourceNames.filter { it.startsWith("img_s_") }
     }
 
-    val selectedRefinedCount = remember(selectedCardsFromVM) {
-        selectedCardsFromVM.count { it.startsWith("img_c_") }
+    // I conteggi ora usano selectedCardsFromDataStore
+    val selectedRefinedCount = remember(selectedCardsFromDataStore) {
+        selectedCardsFromDataStore.count { it.startsWith("img_c_") }
     }
-    val selectedSimpleCount = remember(selectedCardsFromVM) {
-        selectedCardsFromVM.count { it.startsWith("img_s_") }
+    val selectedSimpleCount = remember(selectedCardsFromDataStore) {
+        selectedCardsFromDataStore.count { it.startsWith("img_s_") }
     }
     val minRequiredCards = (BOARD_WIDTH * BOARD_HEIGHT) / 2
 
@@ -118,13 +116,12 @@ fun PreferencesScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
-        // contentAlignment = Alignment.Center // L'allineamento al centro del Box potrebbe non essere ideale con SnackbarHost in basso
     ) {
-        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds)
-        Column(modifier = Modifier.fillMaxSize()) { // Column per contenere LazyColumn e SnackbarHost
+        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds) // Usa ancora quello del VM per coerenza
+        Column(modifier = Modifier.fillMaxSize()) { 
             LazyColumn(
                 modifier = Modifier
-                    .weight(1f) // LazyColumn occupa lo spazio disponibile
+                    .weight(1f) 
                     .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -161,7 +158,6 @@ fun PreferencesScreen(
                     }
                 }
 
-                // --- Selezione Sfondi ---
                 item {
                     OutlinedButton(
                         onClick = { showBackgroundDialog = true },
@@ -177,9 +173,8 @@ fun PreferencesScreen(
                     }
                 }
 
-                // --- Selezione Carte ---
                 item {
-                    Text("CARD SELECTION:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+                    Text("CARD SELECTION:", style = MaterialTheme. typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
                 }
 
                 item {
@@ -206,23 +201,22 @@ fun PreferencesScreen(
                             bottomStart = 1.dp,
                             bottomEnd = 16.dp
                         ),
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp) // Spazio aggiunto per separare i pulsanti dei set
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                     ) {
                         Text("SELECT SIMPLE CARDS\n($selectedSimpleCount/${simpleCardResourceNames.size} selected)", textAlign = TextAlign.Center)
                     }
                 }
                 item {
                     Text(
-                        "Minimum $minRequiredCards cards required in total (currently ${selectedCardsFromVM.size}).",
+                        "Minimum $minRequiredCards cards required in total (currently ${selectedCardsFromDataStore.size}).",
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
                 }
 
-                // --- Pulsante Back to Main Menu ---
                 item {
-                    Spacer(modifier = Modifier.height(16.dp)) // Aggiunge uno spazio prima del pulsante Indietro
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { preferencesViewModel.onBackToMainMenuClicked() },
                         shape = RoundedCornerShape(
@@ -239,7 +233,7 @@ fun PreferencesScreen(
             }
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.CenterHorizontally) // Allinea SnackbarHost in basso centralmente
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
 
@@ -247,7 +241,7 @@ fun PreferencesScreen(
             BackgroundSelectionDialog(
                 availableBackgrounds = availableBackgrounds,
                 initialSelectedBackgrounds = selectedBackgroundsFromVM,
-                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds,
+                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, // Passa il flow del VM
                 onDismissRequest = { showBackgroundDialog = false },
                 onConfirm = { confirmedSelection ->
                     preferencesViewModel.confirmBackgroundSelections(confirmedSelection)
@@ -256,13 +250,14 @@ fun PreferencesScreen(
             )
         }
 
+        // I dialoghi di selezione carte ora usano selectedCardsFromDataStore per initiallySelectedCardsInThisSet
         if (showRefinedCardDialog) {
             CardSetSelectionDialog(
                 cardTypeDisplayName = "Refined",
                 availableCardsForThisSet = refinedCardResourceNames,
-                initiallySelectedCardsInThisSet = selectedCardsFromVM.filter { it.startsWith("img_c_") }.toSet(),
+                initiallySelectedCardsInThisSet = selectedCardsFromDataStore.filter { it.startsWith("img_c_") }.toSet(),
                 getCardDisplayName = preferencesViewModel::getCardDisplayName,
-                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, // Passa lo StateFlow per lo sfondo
+                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, 
                 onDismissRequest = { showRefinedCardDialog = false },
                 onConfirm = { confirmedSelectionForSet ->
                     preferencesViewModel.confirmCardSelectionsForSet(confirmedSelectionForSet, "img_c_")
@@ -275,9 +270,9 @@ fun PreferencesScreen(
             CardSetSelectionDialog(
                 cardTypeDisplayName = "Simple",
                 availableCardsForThisSet = simpleCardResourceNames,
-                initiallySelectedCardsInThisSet = selectedCardsFromVM.filter { it.startsWith("img_s_") }.toSet(),
+                initiallySelectedCardsInThisSet = selectedCardsFromDataStore.filter { it.startsWith("img_s_") }.toSet(),
                 getCardDisplayName = preferencesViewModel::getCardDisplayName,
-                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, // Passa lo StateFlow per lo sfondo
+                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds,
                 onDismissRequest = { showSimpleCardDialog = false },
                 onConfirm = { confirmedSelectionForSet ->
                     preferencesViewModel.confirmCardSelectionsForSet(confirmedSelectionForSet, "img_s_")
@@ -295,13 +290,18 @@ fun CardSetSelectionDialog(
     availableCardsForThisSet: List<String>,
     initiallySelectedCardsInThisSet: Set<String>,
     getCardDisplayName: (String) -> String,
-    selectedBackgroundsFlow: StateFlow<Set<String>>, // Per lo sfondo del dialogo
+    selectedBackgroundsFlow: StateFlow<Set<String>>,
     onDismissRequest: () -> Unit,
     onConfirm: (Set<String>) -> Unit
 ) {
     var tempSelectedCards by remember { mutableStateOf(initiallySelectedCardsInThisSet) }
     var previewedImageName by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+
+    // Aggiorna tempSelectedCards se initiallySelectedCardsInThisSet cambia dall'esterno (es. DataStore si aggiorna)
+    LaunchedEffect(initiallySelectedCardsInThisSet) {
+        tempSelectedCards = initiallySelectedCardsInThisSet
+    }
 
     val toggleCardSelection = { cardName: String ->
         val current = tempSelectedCards.toMutableSet()
@@ -315,9 +315,9 @@ fun CardSetSelectionDialog(
 
     val toggleSelectAllForThisSet = {
         if (tempSelectedCards.size == availableCardsForThisSet.size) {
-            tempSelectedCards = emptySet() // Deseleziona tutto se tutto è già selezionato
+            tempSelectedCards = emptySet()
         } else {
-            tempSelectedCards = availableCardsForThisSet.toSet() // Altrimenti seleziona tutto
+            tempSelectedCards = availableCardsForThisSet.toSet()
         }
     }
 
@@ -406,7 +406,7 @@ fun CardSetSelectionDialog(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Button(
-                            onClick = { onConfirm(tempSelectedCards) }, // Il ViewModel gestirà la validazione del minimo totale
+                            onClick = { onConfirm(tempSelectedCards) },
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -436,8 +436,12 @@ fun BackgroundSelectionDialog(
     onConfirm: (Set<String>) -> Unit
 ) {
     var tempSelectedBgs by remember { mutableStateOf(initialSelectedBackgrounds) }
-    var previewedImageName by remember { mutableStateOf<String?>(null) } // State for preview
+    var previewedImageName by remember { mutableStateOf<String?>(null) } 
     val context = LocalContext.current
+
+    LaunchedEffect(initialSelectedBackgrounds) {
+        tempSelectedBgs = initialSelectedBackgrounds
+    }
 
     val toggleSelection = { bgName: String ->
         val current = tempSelectedBgs.toMutableSet()
@@ -490,10 +494,9 @@ fun BackgroundSelectionDialog(
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
-                    // Added instruction text for preview
                     Text(
                         "(Click image to preview)",
-                        style = MaterialTheme.typography.bodySmall, // Smaller font
+                        style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp, bottom = 8.dp)
                     )
@@ -521,39 +524,38 @@ fun BackgroundSelectionDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { toggleSelection(bgName) } // Clickable sull'intera riga
+                                    .clickable { toggleSelection(bgName) } 
                             ) {
                                 Checkbox(
                                     checked = tempSelectedBgs.contains(bgName),
-                                    onCheckedChange = { toggleSelection(bgName) } // Anche il checkbox gestisce il toggle
+                                    onCheckedChange = { toggleSelection(bgName) } 
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                val drawableId = remember(bgName) { // remember per efficienza
+                                val drawableId = remember(bgName) { 
                                     try {
                                         context.resources.getIdentifier(bgName, "drawable", context.packageName)
                                     } catch (e: Exception) {
-                                        0 // Fallback: ID non valido se non trovata o errore
+                                        0 
                                     }
                                 }
                                 if (drawableId != 0) {
                                     Image(
                                         painter = painterResource(id = drawableId),
                                         contentDescription = "Miniatura $bgName",
-                                        contentScale = ContentScale.Crop, // Crop per riempire lo spazio della miniatura
+                                        contentScale = ContentScale.Crop, 
                                         modifier = Modifier
-                                            .size(40.dp) // Dimensione della miniatura
-                                            .padding(end = 8.dp) // Spazio tra miniatura e testo
-                                            .clickable { previewedImageName = bgName } // Click to show preview
+                                            .size(40.dp) 
+                                            .padding(end = 8.dp) 
+                                            .clickable { previewedImageName = bgName } 
                                     )
                                 } else {
-                                    // Placeholder se l'immagine non viene trovata
                                     Spacer(Modifier.size(40.dp).padding(end=8.dp))
                                 }
                                 Text(
                                     text = bgName.replace("_", " ").replaceFirstChar { 
                                         if (it.isLowerCase()) it.titlecase() else it.toString() 
                                     },
-                                    modifier = Modifier.weight(1f) // Testo occupa lo spazio rimanente
+                                    modifier = Modifier.weight(1f) 
                                 )
                             }
                         }
@@ -594,21 +596,15 @@ fun BackgroundSelectionDialog(
         }
     }
 
-    // Conditionally display the ImagePreviewDialog
     if (previewedImageName != null) {
         ImagePreviewDialog(
-            imageName = previewedImageName!!, // Non-null asserted because of the check
+            imageName = previewedImageName!!, 
             onDismissRequest = { previewedImageName = null }
         )
     }
 }
 
-/**
- * A dialog to show a larger preview of a selected image.
- *
- * @param imageName The resource name of the image to display (e.g., "background_00").
- * @param onDismissRequest Lambda to call when the dialog should be dismissed.
- */
+
 @Composable
 fun ImagePreviewDialog(
     imageName: String,
@@ -617,21 +613,20 @@ fun ImagePreviewDialog(
     val context = LocalContext.current
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false) // Allows custom sizing
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize(0.9f) // Example: 90% of screen width and height
-                .background(Color.Black.copy(alpha = 0.75f)) // Semi-transparent background
-                .clickable(onClick = onDismissRequest), // Click anywhere on the scrim to dismiss
+                .fillMaxSize(0.9f) 
+                .background(Color.Black.copy(alpha = 0.75f)) 
+                .clickable(onClick = onDismissRequest), 
             contentAlignment = Alignment.Center
         ) {
             val drawableId = remember(imageName) {
                 try {
                     context.resources.getIdentifier(imageName, "drawable", context.packageName)
                 } catch (e: Exception) {
-                    // Consider a more specific placeholder or error handling
-                    0 // Fallback: ID non valido
+                    0 
                 }
             }
 
@@ -639,10 +634,10 @@ fun ImagePreviewDialog(
                 Image(
                     painter = painterResource(id = drawableId),
                     contentDescription = "Anteprima $imageName",
-                    contentScale = ContentScale.Fit, // Ensure the whole image is visible
+                    contentScale = ContentScale.Fit, 
                     modifier = Modifier
-                        .padding(16.dp) // Padding around the image itself
-                        .fillMaxWidth() // Fill the width of the Box (which is 90% of screen)
+                        .padding(16.dp) 
+                        .fillMaxWidth() 
                 )
             } else {
                 Text(
@@ -661,7 +656,6 @@ fun ImagePreviewDialog(
 @Composable
 fun PreferencesScreenPreview() {
     val navController = rememberNavController()
-    // Aggiornato FakeAppSettingsDataStore per usare la nuova struttura di selectedCards
     val fakeAppSettingsDataStore = FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards()
     val fakeViewModel = PreferencesViewModel(navController, fakeAppSettingsDataStore)
     PreferencesScreen(
@@ -677,13 +671,13 @@ fun BackgroundSelectionDialogPreview() {
     val initialSelected = setOf(availableBackgrounds[0], availableBackgrounds[2])
     val selectedFlow = MutableStateFlow(initialSelected).asStateFlow()
 
-    MaterialTheme { // Added MaterialTheme for proper preview of Material components
+    MaterialTheme { 
         BackgroundSelectionDialog(
             availableBackgrounds = availableBackgrounds,
             initialSelectedBackgrounds = initialSelected,
             selectedBackgroundsFlow = selectedFlow,
-            onDismissRequest = { /* Azione Preview Annulla */ },
-            onConfirm = { /* Azione Preview Conferma: it -> contiene il set selezionato */ }
+            onDismissRequest = { },
+            onConfirm = { }
         )
     }
 }
@@ -708,8 +702,7 @@ fun CardSetSelectionDialogPreview() {
 }
 
 
-// Added a preview for the new ImagePreviewDialog
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF) // Added white background for better visibility
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF) 
 @Composable
 fun ImagePreviewDialogPreview() {
     MaterialTheme {
@@ -721,17 +714,13 @@ fun ImagePreviewDialogPreview() {
     }
 }
 
-// Rinominata e aggiornata la classe Fake per riflettere le modifiche a selectedCards
 class FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards : IAppSettingsDataStore {
     override val playerName: StateFlow<String> = MutableStateFlow("Test Player")
-    // Rimosso cardSet
     override val selectedBackgrounds: StateFlow<Set<String>> = MutableStateFlow(setOf("background_00", "background_01"))
-    // Aggiunto selectedCards con il default da RealAppSettingsDataStore per coerenza
     override val selectedCards: StateFlow<Set<String>> = MutableStateFlow(RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
+    override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true) 
 
     override suspend fun savePlayerName(name: String) {}
-    // Rimosso saveCardSet
     override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {}
-    // Aggiunto saveSelectedCards
     override suspend fun saveSelectedCards(selectedCards: Set<String>) {}
 }
