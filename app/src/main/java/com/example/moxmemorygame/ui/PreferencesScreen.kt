@@ -52,9 +52,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.BackgroundImg
-import com.example.moxmemorygame.IAppSettingsDataStore
-import com.example.moxmemorygame.RealAppSettingsDataStore
-import com.example.moxmemorygame.model.ScoreEntry // Import ScoreEntry
+// Import aggiornati
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore // Aggiornato
+import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore // Per la Preview
+// RealAppSettingsDataStore non è importato direttamente qui perché non serve più dopo lo spostamento della classe Fake
+import com.example.moxmemorygame.model.BOARD_HEIGHT
+import com.example.moxmemorygame.model.BOARD_WIDTH
+import com.example.moxmemorygame.model.ScoreEntry 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -642,7 +646,8 @@ fun ImagePreviewDialog(
 @Composable
 fun PreferencesScreenPreview() {
     val navController = rememberNavController()
-    val fakeAppSettingsDataStore = FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards()
+    // Utilizza la classe FakeAppSettingsDataStore dal nuovo package e con il nome semplificato
+    val fakeAppSettingsDataStore = FakeAppSettingsDataStore() 
     val fakeViewModel = PreferencesViewModel(navController, fakeAppSettingsDataStore)
     PreferencesScreen(
         preferencesViewModel = fakeViewModel,
@@ -700,50 +705,5 @@ fun ImagePreviewDialogPreview() {
     }
 }
 
-// Updated FakeAppSettingsDataStore to include ranking and last played entry
-class FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards : IAppSettingsDataStore {
-    private val _playerName = MutableStateFlow("Test Player")
-    override val playerName: StateFlow<String> = _playerName.asStateFlow()
-
-    private val _selectedBackgrounds = MutableStateFlow(setOf("background_00", "background_01"))
-    override val selectedBackgrounds: StateFlow<Set<String>> = _selectedBackgrounds.asStateFlow()
-
-    private val _selectedCards = MutableStateFlow(RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
-    override val selectedCards: StateFlow<Set<String>> = _selectedCards.asStateFlow()
-
-    private val _topRanking = MutableStateFlow<List<ScoreEntry>>(emptyList())
-    override val topRanking: StateFlow<List<ScoreEntry>> = _topRanking.asStateFlow()
-
-    private val _lastPlayedEntry = MutableStateFlow<ScoreEntry?>(null)
-    override val lastPlayedEntry: StateFlow<ScoreEntry?> = _lastPlayedEntry.asStateFlow()
-
-    override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true)
-
-    override suspend fun savePlayerName(name: String) {
-        _playerName.value = name
-        Log.d("FakeDataStore", "Saved player name: $name")
-    }
-
-    override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
-        _selectedBackgrounds.value = backgrounds
-        Log.d("FakeDataStore", "Saved backgrounds: $backgrounds")
-    }
-
-    override suspend fun saveSelectedCards(selectedCardsToSave: Set<String>) {
-        _selectedCards.value = selectedCardsToSave
-        Log.d("FakeDataStore", "Saved cards: $selectedCardsToSave")
-    }
-
-    override suspend fun saveScore(playerName: String, score: Int) {
-        val newEntry = ScoreEntry(playerName, score, System.currentTimeMillis())
-        _lastPlayedEntry.value = newEntry
-        
-        val currentRanking = _topRanking.value.toMutableList()
-        currentRanking.add(newEntry)
-        _topRanking.value = currentRanking
-            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenByDescending { it.timestamp })
-            .take(ScoreEntry.MAX_RANKING_ENTRIES)
-        
-        Log.d("FakeDataStore", "Saved score: $newEntry. New ranking: ${_topRanking.value}")
-    }
-}
+// La definizione di FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards è stata rimossa da qui
+// e spostata in data/local/FakeAppSettingsDataStore.kt

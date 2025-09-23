@@ -32,8 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.BackgroundImg
-import com.example.moxmemorygame.IAppSettingsDataStore
-import com.example.moxmemorygame.ui.FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards
+// Import corretto per IAppSettingsDataStore
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.model.ScoreEntry
 import org.koin.androidx.compose.koinViewModel
 
@@ -87,8 +88,8 @@ fun OpeningMenuScreen(
                     itemsIndexed(topRanking.take(MAX_VISIBLE_RANKING_ENTRIES)) { index, entry ->
                         val isCurrentEntryHighlighted = entry.timestamp == lastPlayedEntry?.timestamp && entry.score == lastPlayedEntry?.score && entry.playerName == lastPlayedEntry?.playerName
                         RankingEntryView(
-                            rank = index + 1, 
-                            entry = entry, 
+                            rank = index + 1,
+                            entry = entry,
                             isHighlighted = isCurrentEntryHighlighted
                         )
                         if (index < topRanking.take(MAX_VISIBLE_RANKING_ENTRIES).lastIndex) {
@@ -269,7 +270,7 @@ fun RankingEntryView(rank: Int, entry: ScoreEntry, isHighlighted: Boolean) {
 @Preview(showBackground = true)
 @Composable
 fun OpeningMenuScreenPreview() {
-    val fakeDataStore = FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards()
+    val fakeDataStore = FakeAppSettingsDataStore()
     LaunchedEffect(Unit) {
         fakeDataStore.saveScore("UserPreview", 1234) 
         fakeDataStore.saveScore("GiocatoreEstremo", 3200) 

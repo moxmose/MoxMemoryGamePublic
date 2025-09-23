@@ -43,14 +43,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.moxmemorygame.ui.GameCard
-import com.example.moxmemorygame.ui.GameCardArray
+// import com.example.moxmemorygame.ui.GameCard // Rimosso se non più usato direttamente qui
+// import com.example.moxmemorygame.ui.GameCardArray // Rimosso
 import com.example.moxmemorygame.ui.GameCardImages
 import com.example.moxmemorygame.ui.SoundUtils
 import com.example.moxmemorygame.ui.GameViewModel
-import com.example.moxmemorygame.ui.BOARD_WIDTH
-import com.example.moxmemorygame.ui.BOARD_HEIGHT
+// import com.example.moxmemorygame.ui.BOARD_WIDTH // Rimosso
+// import com.example.moxmemorygame.ui.BOARD_HEIGHT // Rimosso
 import com.example.moxmemorygame.ui.formatDuration
+import com.example.moxmemorygame.model.GameBoard // Nuovo Import
+import com.example.moxmemorygame.model.BOARD_WIDTH // Nuovo Import
+import com.example.moxmemorygame.model.BOARD_HEIGHT // Nuovo Import
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.compose.getViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -135,7 +138,7 @@ fun GameApp(
             ShowTablePlay(
                 xDim = BOARD_WIDTH,
                 yDim = BOARD_HEIGHT,
-                tablePlay = tablePlay,
+                tablePlay = tablePlay, // Ora si aspetta GameBoard
                 gameCardImages = gameCardImages,
                 checkPlayCardTurned = checkPlayCardTurned,
                 modifier = Modifier
@@ -193,7 +196,7 @@ fun Head(
 fun ShowTablePlay(
     xDim: Int,
     yDim: Int,
-    tablePlay: GameCardArray,
+    tablePlay: GameBoard, // Modificato da GameCardArray a GameBoard
     @DrawableRes
     gameCardImages: List<Int>,
     checkPlayCardTurned: (Int, Int) -> Unit,
@@ -508,7 +511,7 @@ fun GameWonDialog(
 @RequiresApi(Build.VERSION_CODES.HONEYCOMB_MR2)
 @Composable
 fun Testing(
-    tablePlay: GameCardArray,
+    tablePlay: GameBoard, // Modificato da GameCardArray a GameBoard
     setPlayCardTurned: (Int, Int, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -576,10 +579,10 @@ fun Testing(
 
 @Composable
 fun TestingDelayUsingList(
-    tablePlay: GameCardArray,
+    tablePlay: GameBoard, // Modificato da GameCardArray a GameBoard
     setPlayCardTurned: (Int, Int, Boolean) -> Unit,
-    testList: SnapshotStateList<GameCard>,
-    testValue: MutableState<GameCard>,
+    testList: SnapshotStateList<com.example.moxmemorygame.model.GameCard>, // Assicurarsi che l'import sia corretto
+    testValue: MutableState<com.example.moxmemorygame.model.GameCard>,
     testListFun: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -653,10 +656,10 @@ fun TestingPreview() {
             timeGame = "05:39"
         )
         val gameCardImages = GameCardImages().image
-        val tablePlay = GameCardArray()
+        val tablePlay = GameBoard() // Modificato da GameCardArray a GameBoard
         ShowTablePlay(
             xDim = BOARD_WIDTH,
-            yDim = 4,
+            yDim = BOARD_HEIGHT, // Assicurarsi che usi BOARD_HEIGHT dal model
             tablePlay = tablePlay,
             gameCardImages = gameCardImages,
             checkPlayCardTurned = {x, y -> },

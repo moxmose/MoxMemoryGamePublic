@@ -1,7 +1,10 @@
 package com.example.moxmemorygame
 
-import android.util.Log // Aggiunto per Log.e nella lambda
+import android.util.Log
 import androidx.navigation.NavHostController
+// Import aggiunti/corretti per IAppSettingsDataStore e RealAppSettingsDataStore
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+import com.example.moxmemorygame.data.local.RealAppSettingsDataStore
 import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.NavigationManager
 import com.example.moxmemorygame.ui.OpeningMenuViewModel
@@ -10,7 +13,7 @@ import com.example.moxmemorygame.ui.TimerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.koin.android.ext.koin.androidContext // Modificato per usare androidContext() invece di androidApplication()
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -21,15 +24,15 @@ val myAppModule = module {
     }
 
     single<CoroutineScope>(named("ApplicationScope")) {CoroutineScope(SupervisorJob() + Dispatchers.Default)}
-    // AppSettinfDataStore can now the scope or use its default
-    //single { RealAppSettingsDataStore(androidContext()/*, get(named("ApplicationScope"))*/) }
-    single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext()/*, get(named("ApplicationScope"))*/) }
+    
+    // Ora Koin userà RealAppSettingsDataStore dal package data.local grazie agli import corretti
+    single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext()) }
 
     viewModel { (navController: NavHostController) ->
         GameViewModel(
             navController = navController,
             timerViewModel = get(),
-            appSettingsDataStore = get(),
+            appSettingsDataStore = get(), // Questo get() ora riceverà l'istanza corretta
             resourceNameToId = { resourceName ->
                 try {
                     androidContext().resources.getIdentifier(
@@ -39,8 +42,7 @@ val myAppModule = module {
                     )
                 } catch (e: Exception) {
                     Log.e("KoinDI", "Resource ID not found for: $resourceName", e)
-                    0 // Restituisce 0 o un ID di placeholder valido se la risorsa non è trovata
-                      // Considera di definire una R.drawable.placeholder se vuoi un'immagine specifica per l'errore
+                    0 
                 }
             }
         )
@@ -49,16 +51,14 @@ val myAppModule = module {
     viewModel { (navController: NavHostController) ->
         PreferencesViewModel(
             navController = navController,
-            appSettingsDataStore = get()
+            appSettingsDataStore = get() // Anche questo get() riceverà l'istanza corretta
         )
     }
 
-    // OpeningMenuViewModel could be instantiated using a factory, but a VM is more appropriated
-    //factory { (navController: NavHostController) -> OpeningMenuViewModel(navController) }
     viewModel { (navController: NavHostController) ->
         OpeningMenuViewModel(
             navController = navController,
-            appSettingsDataStore = get()
+            appSettingsDataStore = get() // E anche questo
             )
     }
 }

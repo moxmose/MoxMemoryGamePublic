@@ -8,8 +8,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
-import com.example.moxmemorygame.IAppSettingsDataStore
-import com.example.moxmemorygame.RealAppSettingsDataStore // Per fallback
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+import com.example.moxmemorygame.data.local.RealAppSettingsDataStore // Per fallback
+import com.example.moxmemorygame.model.GameBoard // Nuovo Import
+import com.example.moxmemorygame.model.GameCard // Nuovo Import
+import com.example.moxmemorygame.model.BOARD_WIDTH // Nuovo Import
+import com.example.moxmemorygame.model.BOARD_HEIGHT // Nuovo Import
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -40,8 +44,8 @@ class GameViewModel(
     private val noLastMove = Pair(-1, -1)
     private var cardInPlay: Boolean = false
 
-    private val _tablePlay = GameCardArray()
-    val tablePlay: GameCardArray get() = _tablePlay
+    private val _tablePlay = GameBoard() // Modificato da GameCardArray a GameBoard
+    val tablePlay: GameBoard get() = _tablePlay // Modificato da GameCardArray a GameBoard
 
     @DrawableRes
     private lateinit var _gameCardImages: List<Int>
@@ -170,8 +174,9 @@ class GameViewModel(
                     _tablePlay.cardsArray[x][y].value.id
                 ) {
                     refreshPointsRightCouple()
-                    _tablePlay.cardsArray[lastMove.first][lastMove.second].value.coupled = true
-                    _tablePlay.cardsArray[x][y].value.coupled = true
+                    // Ora che GameCard è una data class, usiamo copy() per modificare lo stato coupled
+                    _tablePlay.cardsArray[lastMove.first][lastMove.second].value = _tablePlay.cardsArray[lastMove.first][lastMove.second].value.copy(coupled = true)
+                    _tablePlay.cardsArray[x][y].value = _tablePlay.cardsArray[x][y].value.copy(coupled = true)
                     
                     if(checkAllCardsCoupled()) {
                         winSound()
@@ -210,7 +215,8 @@ class GameViewModel(
     private fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
         require(x in _tablePlay.cardsArray.indices) { "x coordinate is out of bounds" }
         require(y in _tablePlay.cardsArray[x].indices) { "y coordinate is out of bounds" }
-        with(_tablePlay.cardsArray[x][y]) { value = value.copyChangingTurned(newTurnedState) }
+        // Utilizza il metodo copy() fornito dalla data class GameCard
+        with(_tablePlay.cardsArray[x][y]) { value = value.copy(turned = newTurnedState) }
     }
 
     fun setResetPause() {

@@ -4,8 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
-import com.example.moxmemorygame.IAppSettingsDataStore
-import com.example.moxmemorygame.RealAppSettingsDataStore // Importato per DEFAULT_SELECTED_CARDS
+// Import aggiornati
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+import com.example.moxmemorygame.data.local.RealAppSettingsDataStore // Importato per DEFAULT_SELECTED_CARDS
+import com.example.moxmemorygame.model.BOARD_HEIGHT
+import com.example.moxmemorygame.model.BOARD_WIDTH
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

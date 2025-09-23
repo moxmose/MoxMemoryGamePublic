@@ -19,9 +19,4 @@ data class GameCardImages (
     )
 )
 
-class GameCardImage (
-    val id: Int,
-    @param:DrawableRes //@DrawableRes
-    var image: Int
-) {
-}
+// La classe "class GameCardImage" è stata rimossa perché non utilizzata.
