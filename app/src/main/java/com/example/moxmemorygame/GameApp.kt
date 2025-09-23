@@ -496,7 +496,7 @@ fun GameWonDialog(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "CLICK TO PLAY AGAIN",
+                    text = "CLICK TO SAVE SCORE", // Modificato qui
                     modifier = Modifier.padding(16.dp),
                 )
             }

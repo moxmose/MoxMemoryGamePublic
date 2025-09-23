@@ -1,6 +1,7 @@
 package com.example.moxmemorygame.ui
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background // Added for ImagePreviewDialog
 import androidx.compose.foundation.clickable
@@ -53,6 +54,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.BackgroundImg
 import com.example.moxmemorygame.IAppSettingsDataStore
 import com.example.moxmemorygame.RealAppSettingsDataStore
+import com.example.moxmemorygame.model.ScoreEntry // Import ScoreEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,12 +68,9 @@ fun PreferencesScreen(
     innerPadding: PaddingValues
 ) {
     val playerName by preferencesViewModel.playerName.collectAsState()
-    // Per selectedBackgrounds, continuiamo a usare il flow interno al ViewModel per ora,
-    // dato che sembra funzionare correttamente e la sua gestione del default è leggermente diversa.
     val selectedBackgroundsFromVM by preferencesViewModel.selectedBackgrounds.collectAsState()
     val availableBackgrounds = preferencesViewModel.availableBackgrounds
 
-    // selectedCardsFromDataStore ora osserva direttamente il flow da appSettingsDataStore
     val selectedCardsFromDataStore by preferencesViewModel.appSettingsDataStore.selectedCards.collectAsState()
     val availableCardResourceNames = preferencesViewModel.availableCardResourceNames
 
@@ -103,7 +102,6 @@ fun PreferencesScreen(
         availableCardResourceNames.filter { it.startsWith("img_s_") }
     }
 
-    // I conteggi ora usano selectedCardsFromDataStore
     val selectedRefinedCount = remember(selectedCardsFromDataStore) {
         selectedCardsFromDataStore.count { it.startsWith("img_c_") }
     }
@@ -117,7 +115,7 @@ fun PreferencesScreen(
             .fillMaxSize()
             .padding(innerPadding),
     ) {
-        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds) // Usa ancora quello del VM per coerenza
+        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds) 
         Column(modifier = Modifier.fillMaxSize()) { 
             LazyColumn(
                 modifier = Modifier
@@ -241,7 +239,7 @@ fun PreferencesScreen(
             BackgroundSelectionDialog(
                 availableBackgrounds = availableBackgrounds,
                 initialSelectedBackgrounds = selectedBackgroundsFromVM,
-                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, // Passa il flow del VM
+                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, 
                 onDismissRequest = { showBackgroundDialog = false },
                 onConfirm = { confirmedSelection ->
                     preferencesViewModel.confirmBackgroundSelections(confirmedSelection)
@@ -250,7 +248,6 @@ fun PreferencesScreen(
             )
         }
 
-        // I dialoghi di selezione carte ora usano selectedCardsFromDataStore per initiallySelectedCardsInThisSet
         if (showRefinedCardDialog) {
             CardSetSelectionDialog(
                 cardTypeDisplayName = "Refined",
@@ -298,7 +295,6 @@ fun CardSetSelectionDialog(
     var previewedImageName by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
-    // Aggiorna tempSelectedCards se initiallySelectedCardsInThisSet cambia dall'esterno (es. DataStore si aggiorna)
     LaunchedEffect(initiallySelectedCardsInThisSet) {
         tempSelectedCards = initiallySelectedCardsInThisSet
     }
@@ -567,12 +563,7 @@ fun BackgroundSelectionDialog(
                     ) {
                         Button(
                             onClick = onDismissRequest,
-                            shape = RoundedCornerShape(
-                                topStart = 1.dp,
-                                topEnd = 16.dp,
-                                bottomStart = 16.dp,
-                                bottomEnd = 1.dp
-                            ),
+                            shape = RoundedCornerShape(topStart = 1.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 1.dp),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("CANCEL", style = MaterialTheme.typography.labelMedium)
@@ -580,12 +571,7 @@ fun BackgroundSelectionDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Button(
                             onClick = { onConfirm(tempSelectedBgs) },
-                            shape = RoundedCornerShape(
-                                topStart = 16.dp,
-                                topEnd = 1.dp,
-                                bottomStart = 1.dp,
-                                bottomEnd = 16.dp
-                            ),
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("OK", style = MaterialTheme.typography.labelMedium)
@@ -714,13 +700,50 @@ fun ImagePreviewDialogPreview() {
     }
 }
 
+// Updated FakeAppSettingsDataStore to include ranking and last played entry
 class FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards : IAppSettingsDataStore {
-    override val playerName: StateFlow<String> = MutableStateFlow("Test Player")
-    override val selectedBackgrounds: StateFlow<Set<String>> = MutableStateFlow(setOf("background_00", "background_01"))
-    override val selectedCards: StateFlow<Set<String>> = MutableStateFlow(RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
-    override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true) 
+    private val _playerName = MutableStateFlow("Test Player")
+    override val playerName: StateFlow<String> = _playerName.asStateFlow()
 
-    override suspend fun savePlayerName(name: String) {}
-    override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {}
-    override suspend fun saveSelectedCards(selectedCards: Set<String>) {}
+    private val _selectedBackgrounds = MutableStateFlow(setOf("background_00", "background_01"))
+    override val selectedBackgrounds: StateFlow<Set<String>> = _selectedBackgrounds.asStateFlow()
+
+    private val _selectedCards = MutableStateFlow(RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
+    override val selectedCards: StateFlow<Set<String>> = _selectedCards.asStateFlow()
+
+    private val _topRanking = MutableStateFlow<List<ScoreEntry>>(emptyList())
+    override val topRanking: StateFlow<List<ScoreEntry>> = _topRanking.asStateFlow()
+
+    private val _lastPlayedEntry = MutableStateFlow<ScoreEntry?>(null)
+    override val lastPlayedEntry: StateFlow<ScoreEntry?> = _lastPlayedEntry.asStateFlow()
+
+    override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true)
+
+    override suspend fun savePlayerName(name: String) {
+        _playerName.value = name
+        Log.d("FakeDataStore", "Saved player name: $name")
+    }
+
+    override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
+        _selectedBackgrounds.value = backgrounds
+        Log.d("FakeDataStore", "Saved backgrounds: $backgrounds")
+    }
+
+    override suspend fun saveSelectedCards(selectedCardsToSave: Set<String>) {
+        _selectedCards.value = selectedCardsToSave
+        Log.d("FakeDataStore", "Saved cards: $selectedCardsToSave")
+    }
+
+    override suspend fun saveScore(playerName: String, score: Int) {
+        val newEntry = ScoreEntry(playerName, score, System.currentTimeMillis())
+        _lastPlayedEntry.value = newEntry
+        
+        val currentRanking = _topRanking.value.toMutableList()
+        currentRanking.add(newEntry)
+        _topRanking.value = currentRanking
+            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenByDescending { it.timestamp })
+            .take(ScoreEntry.MAX_RANKING_ENTRIES)
+        
+        Log.d("FakeDataStore", "Saved score: $newEntry. New ranking: ${_topRanking.value}")
+    }
 }

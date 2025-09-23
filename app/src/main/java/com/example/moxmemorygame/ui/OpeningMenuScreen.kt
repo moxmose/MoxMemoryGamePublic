@@ -1,36 +1,51 @@
 package com.example.moxmemorygame.ui
 
 import android.annotation.SuppressLint
-// Rimosso Image, painterResource e R perché BackgroundImg condiviso dovrebbe gestirli
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-// Rimosso collectAsState e getValue se currentBackground non è più usato
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-// Rimosso ContentScale se BackgroundImg condiviso lo gestisce
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
-import com.example.moxmemorygame.BackgroundImg // Importa il Composable BackgroundImg condiviso
-import com.example.moxmemorygame.IAppSettingsDataStore // Necessario per la Preview
-//import com.example.moxmemorygame.FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards // Necessario per la Preview
+import com.example.moxmemorygame.BackgroundImg
+import com.example.moxmemorygame.IAppSettingsDataStore
+import com.example.moxmemorygame.ui.FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards
+import com.example.moxmemorygame.model.ScoreEntry
 import org.koin.androidx.compose.koinViewModel
+
+private const val MAX_VISIBLE_RANKING_ENTRIES = 5
 
 @Composable
 fun OpeningMenuScreen(
     viewModel: OpeningMenuViewModel = koinViewModel(),
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues // Questo padding viene dal Scaffold principale
 ) {
-    // val currentBackground by viewModel.backgroundPreference.collectAsState() // Non più necessario se BackgroundImg prende lo StateFlow
+    val topRanking by viewModel.topRanking.collectAsState()
+    val lastPlayedEntry by viewModel.lastPlayedEntry.collectAsState()
 
     Box(
         modifier = Modifier
@@ -38,66 +53,261 @@ fun OpeningMenuScreen(
             .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
-        // Usa il Composable BackgroundImg condiviso, passando lo StateFlow dal ViewModel
-        // Se il BackgroundImg condiviso non accetta alpha, l'alpha di 0.5f precedente andrà perso.
-        // Potrebbe essere necessario modificare BackgroundImg per supportare alpha o wrapparlo.
-        BackgroundImg(selectedBackgrounds = viewModel.backgroundPreference, alpha = 0.5f) // Tentiamo di passare alpha
-        
-        Column(
-            modifier = Modifier
-                // .padding(innerPadding) // Il padding è già applicato al Box esterno
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally // Centra i bottoni e il testo
-        ) {
-            Text(
-                text = "MOX MEMORY GAME",
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp) // Aggiunto padding per spaziatura
-            )
-            Button(
-                onClick = viewModel::onStartGameClicked,
-                shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 1.dp,
-                    bottomStart = 1.dp,
-                    bottomEnd = 16.dp
-                ),
+        BackgroundImg(selectedBackgrounds = viewModel.backgroundPreference, alpha = 0.5f)
+
+        Column(modifier = Modifier.fillMaxSize()) { // Colonna principale per layout
+            LazyColumn(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp) // Modificato padding per coerenza
-                    .fillMaxWidth(0.8f) // Rende i bottoni un po' meno larghi
+                    .weight(1f) // Occupa lo spazio disponibile sopra i pulsanti
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top // Allineamento in alto per il contenuto della LazyColumn
             ) {
-                Text(text = "START NEW GAME")
+                // Item 1: Titolo
+                item {
+                    Text(
+                        text = "MOX MEMORY GAME",
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp, bottom = 24.dp) // Spazio sopra e sotto il titolo
+                    )
+                }
+
+                // Item 2: Top Ranking
+                if (topRanking.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "TOP RANKING",
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                        )
+                    }
+                    itemsIndexed(topRanking.take(MAX_VISIBLE_RANKING_ENTRIES)) { index, entry ->
+                        val isCurrentEntryHighlighted = entry.timestamp == lastPlayedEntry?.timestamp && entry.score == lastPlayedEntry?.score && entry.playerName == lastPlayedEntry?.playerName
+                        RankingEntryView(
+                            rank = index + 1, 
+                            entry = entry, 
+                            isHighlighted = isCurrentEntryHighlighted
+                        )
+                        if (index < topRanking.take(MAX_VISIBLE_RANKING_ENTRIES).lastIndex) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp)) // Spazio dopo il ranking
+                    }
+                } else {
+                    item { 
+                        // Spacer opzionale se il ranking è vuoto e si vuole mantenere uno spazio
+                        // Spacer(modifier = Modifier.height(MaterialTheme.typography.headlineSmall.fontSize.value.dp * 2)) // Esempio
+                    }
+                }
+
+                // Item 3: Last Played
+                item {
+                    lastPlayedEntry?.let {
+                        LastPlayedEntryView(entry = it) // Ora userà lo stile di evidenziazione
+                        Spacer(modifier = Modifier.height(16.dp)) 
+                    }
+                }
+            } // Fine LazyColumn per contenuto scrollabile
+
+            // Sezione Pulsanti (fissa in basso, fuori dalla LazyColumn)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp) 
+                    .padding(top = 16.dp, bottom = 24.dp), 
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom // Assicura che i pulsanti stiano in basso nella loro colonna dedicata
+            ) {
+                Button(
+                    onClick = viewModel::onStartGameClicked,
+                    shape = RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 1.dp,
+                        bottomStart = 1.dp,
+                        bottomEnd = 16.dp
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(text = "START NEW GAME", fontSize = 16.sp)
+                }
+                Button(
+                    onClick = viewModel::onSettingsClicked,
+                    shape = RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 1.dp,
+                        bottomStart = 1.dp,
+                        bottomEnd = 16.dp
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(text = "SETTINGS", fontSize = 16.sp)
+                }
             }
-            Button(
-                onClick = viewModel::onSettingsClicked,
-                shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 1.dp,
-                    bottomStart = 1.dp,
-                    bottomEnd = 16.dp
-                ),
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp) // Modificato padding per coerenza
-                    .fillMaxWidth(0.8f) // Rende i bottoni un po' meno larghi
+        } // Fine Colonna principale
+    }
+}
+
+@Composable
+fun LastPlayedEntryView(entry: ScoreEntry) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .padding(vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors( // Stile unificato con l'highlight del ranking
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) { // Padding generale della Card
+            // Titolo della Card
+            Text(
+                text = "LAST GAME", 
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer, // Colore testo per coerenza con highlight
+                modifier = Modifier.fillMaxWidth(), 
+                textAlign = TextAlign.Center 
+            )
+            Spacer(modifier = Modifier.height(8.dp)) 
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically 
             ) {
-                Text(text = "SETTINGS")
+                Column(modifier = Modifier.weight(0.7f)) { 
+                    Text(
+                        text = entry.playerName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold, 
+                        color = MaterialTheme.colorScheme.onSecondaryContainer // Colore testo
+                    )
+                    Text(
+                        text = entry.dateTime,
+                        fontSize = 10.sp, 
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f) // Colore testo
+                    )
+                }
+                Text(
+                    text = "${entry.score} pts",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold, 
+                    textAlign = TextAlign.End, 
+                    color = MaterialTheme.colorScheme.onSecondaryContainer, // Colore testo
+                    modifier = Modifier.weight(0.3f) 
+                )
             }
         }
     }
 }
 
-// La funzione BackgroundImg locale è stata rimossa.
+@Composable
+fun RankingEntryView(rank: Int, entry: ScoreEntry, isHighlighted: Boolean) {
+    val cardColors = if (isHighlighted) {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f))
+    } else {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+    }
+    val textColor = if (isHighlighted) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(6.dp),
+        colors = cardColors
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "$rank.", 
+                style = MaterialTheme.typography.titleMedium,
+                color = textColor,
+                modifier = Modifier.weight(0.15f)
+            )
+            Column(modifier = Modifier.weight(0.55f)) {
+                Text(
+                    text = entry.playerName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textColor
+                )
+                Text(
+                    text = entry.dateTime,
+                    fontSize = 10.sp, 
+                    color = textColor.copy(alpha = 0.8f)
+                )
+            }
+            Text(
+                text = "${entry.score} pts",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.End,
+                color = textColor,
+                modifier = Modifier.weight(0.3f)
+            )
+        }
+    }
+}
+
 
 @SuppressLint("ViewModelConstructorInComposable")
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun OpeningMenuScreenPreview() {
-    // Utilizza una fake implementation di IAppSettingsDataStore per la preview
-    val fakeAppSettingsDataStore = FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards()
+    val fakeDataStore = FakeAppSettingsDataStoreUpdatedForBackgroundsAndCards()
+    LaunchedEffect(Unit) {
+        fakeDataStore.saveScore("UserPreview", 1234) 
+        fakeDataStore.saveScore("GiocatoreEstremo", 3200) 
+        fakeDataStore.saveScore("PlayerNumeroUno", 2500) 
+        fakeDataStore.saveScore("MoxFan", 1800)     
+        fakeDataStore.saveScore("AnotherPlayer", 1500) 
+        fakeDataStore.saveScore("YetAnother", 1000) 
+        fakeDataStore.saveScore("HighScorerLAST", 2800) 
+    }
+
     val fakeViewModel = OpeningMenuViewModel(
         navController = rememberNavController(),
-        appSettingsDataStore = fakeAppSettingsDataStore 
+        appSettingsDataStore = fakeDataStore
     )
-    val fakePadding = PaddingValues(0.dp) // Usa 0.dp per la preview o un valore realistico
-    OpeningMenuScreen(fakeViewModel, fakePadding)
+    MaterialTheme {
+        OpeningMenuScreen(fakeViewModel, PaddingValues(0.dp))
+    }
+}
+
+@Preview
+@Composable
+fun LastPlayedEntryPreview() {
+    val entry = ScoreEntry("Preview Player", 1250, System.currentTimeMillis() - 100000000)
+    MaterialTheme {
+        Box(modifier=Modifier.padding(16.dp)) {
+            LastPlayedEntryView(entry = entry)
+        }
+    }
+}
+
+@Preview
+@Composable
+fun RankingEntryPreview() {
+    val entry = ScoreEntry("Rank Preview", 2800, System.currentTimeMillis() - 200000000)
+    MaterialTheme {
+        Column(modifier = Modifier.padding(16.dp)){
+            RankingEntryView(rank = 1, entry = entry, isHighlighted = false)
+            RankingEntryView(rank = 2, entry = entry.copy(playerName = "Highlighted Player", score = 2750), isHighlighted = true)
+        }
+    }
 }

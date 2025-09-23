@@ -1,6 +1,6 @@
 package com.example.moxmemorygame.ui
 
-import android.util.Log // Aggiunto per i log
+import android.util.Log // Assicurati che Log sia importato
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
@@ -13,8 +13,8 @@ import com.example.moxmemorygame.RealAppSettingsDataStore // Per fallback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filter // Aggiunto per filter
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first // Import per .first() su Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -22,7 +22,7 @@ class GameViewModel(
     private val navController: NavHostController,
     private val timerViewModel: TimerViewModel,
     private val appSettingsDataStore: IAppSettingsDataStore,
-    private val resourceNameToId: (String) -> Int // Iniezione della lambda per conversione nome->ID
+    private val resourceNameToId: (String) -> Int
 ): ViewModel() {
     val playerName: StateFlow<String> = appSettingsDataStore.playerName
     val selectedBackgrounds: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
@@ -40,11 +40,11 @@ class GameViewModel(
     private val noLastMove = Pair(-1, -1)
     private var cardInPlay: Boolean = false
 
-    private val _tablePlay = GameCardArray() // GameCard.id rimane Int
+    private val _tablePlay = GameCardArray()
     val tablePlay: GameCardArray get() = _tablePlay
 
     @DrawableRes
-    private lateinit var _gameCardImages: List<Int> // Rimane List<Int>, conterrà gli ID risorsa reali
+    private lateinit var _gameCardImages: List<Int>
     val gameCardImages get() = _gameCardImages
 
     val currentTime = timerViewModel.elapsedSeconds
@@ -56,14 +56,14 @@ class GameViewModel(
 
     init {
         Log.d("GameVM", "init - Calling resetGame()")
-        resetGame() // resetGame ora lancia una coroutine
+        resetGame()
     }
 
     private fun resetGame() {
         Log.d("GameVM", "resetGame - Starting game reset process")
         viewModelScope.launch {
             Log.d("GameVM", "resetGame - Coroutine launched, calling loadAndShuffleCards()")
-            loadAndShuffleCards() // Carica e mescola le carte basate sulle preferenze
+            loadAndShuffleCards()
             
             Log.d("GameVM", "resetGame - loadAndShuffleCards() completed, proceeding with main thread state reset")
             withContext(Dispatchers.Main) {
@@ -85,7 +85,6 @@ class GameViewModel(
 
     private suspend fun loadAndShuffleCards() {
         Log.d("GameVM", "loadAndShuffleCards - Waiting for DataStore to be loaded...")
-        // Attende finché isDataLoaded non è true, prendendo il primo valore true emesso.
         appSettingsDataStore.isDataLoaded.filter { it }.first() 
         Log.d("GameVM", "loadAndShuffleCards - DataStore is loaded. Proceeding to load cards.")
 
@@ -118,8 +117,6 @@ class GameViewModel(
                             turned = false,
                             coupled = false
                         )
-                    } else {
-                        // Non dovrebbe accadere
                     }
                 }
             }
@@ -180,8 +177,16 @@ class GameViewModel(
                         winSound()
                         gameWon.value = true
                         setResetPause()
-                    } else
+                        // Salva il punteggio quando il gioco è vinto
+                        viewModelScope.launch {
+                            val pName = appSettingsDataStore.playerName.first()
+                            val finalScore = _score.intValue
+                            appSettingsDataStore.saveScore(pName, finalScore)
+                            Log.d("GameVM", "Game won! Saved score: $finalScore for player: $pName")
+                        }
+                    } else {
                         successSound()
+                    }
                     lastMove = noLastMove
                     cardInPlay = false
                     return

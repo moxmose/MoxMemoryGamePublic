@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.moxmemorygame.model.ScoreEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +22,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -30,10 +35,15 @@ class RealAppSettingsDataStore(
     private val externalScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : IAppSettingsDataStore {
 
+    // Mutex per sincronizzare gli accessi in scrittura a topRanking
+    private val rankingMutex = Mutex()
+
     companion object {
         val PLAYER_NAME_KEY = stringPreferencesKey("player_name")
         val SELECTED_BACKGROUNDS_KEY = stringSetPreferencesKey("selected_backgrounds")
         val SELECTED_CARDS_KEY = stringSetPreferencesKey("selected_cards")
+        val TOP_RANKING_KEY = stringPreferencesKey("top_ranking")
+        val LAST_PLAYED_ENTRY_KEY = stringPreferencesKey("last_played_entry")
 
         const val DEFAULT_PLAYER_NAME = "Default Player"
         val DEFAULT_SELECTED_BACKGROUNDS = setOf("background_00")
@@ -43,105 +53,116 @@ class RealAppSettingsDataStore(
             "img_c_10", "img_c_11", "img_c_12", "img_c_13", "img_c_14",
             "img_c_15", "img_c_16", "img_c_17", "img_c_18", "img_c_19"
         )
-        // Proposta di valore sentinella se decidiamo di usarlo, per ora non implementato attivamente
-        // val UNINITIALIZED_CARDS_SENTINEL = setOf("___UNINITIALIZED_CARD_SENTINEL_VALUE___") 
+        val DEFAULT_TOP_RANKING = emptyList<ScoreEntry>()
+        val DEFAULT_LAST_PLAYED_ENTRY = null
     }
 
     private val dataStore = context.dataStore
+    private val json = Json { ignoreUnknownKeys = true; prettyPrint = false }
 
     private val _isDataLoaded = MutableStateFlow(false)
     override val isDataLoaded: StateFlow<Boolean> = _isDataLoaded.asStateFlow()
 
-    // Definiamo i flussi sorgente privati PRIMA
     private val playerNameSourceFlow = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) { emit(emptyPreferences()) } else { throw exception }
-        }
-        .map { preferences -> preferences[PLAYER_NAME_KEY] ?: DEFAULT_PLAYER_NAME }
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[PLAYER_NAME_KEY] ?: DEFAULT_PLAYER_NAME }
 
     private val selectedBackgroundsSourceFlow = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) { emit(emptyPreferences()) } else { throw exception }
-        }
-        .map { preferences ->
-            val currentSelection = preferences[SELECTED_BACKGROUNDS_KEY]
-            if (currentSelection.isNullOrEmpty()) {
-                Log.d("DataStore_Map", "SelectedBackgrounds: No value in Prefs or empty, returning DEFAULT_SELECTED_BACKGROUNDS")
-                DEFAULT_SELECTED_BACKGROUNDS 
-            } else { 
-                Log.d("DataStore_Map", "SelectedBackgrounds: Found value in Prefs: $currentSelection")
-                currentSelection 
-            }
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { prefs ->
+            prefs[SELECTED_BACKGROUNDS_KEY]?.takeIf { it.isNotEmpty() } ?: DEFAULT_SELECTED_BACKGROUNDS
         }
 
     private val selectedCardsSourceFlow = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) { emit(emptyPreferences()) } else { throw exception }
-        }
-        .map { preferences ->
-            val currentSelection = preferences[SELECTED_CARDS_KEY]
-            if (currentSelection.isNullOrEmpty()) {
-                Log.w("DataStore_Map", "SelectedCards: No value in Prefs or empty for key '${SELECTED_CARDS_KEY.name}', RETURNING DEFAULT_SELECTED_CARDS")
-                DEFAULT_SELECTED_CARDS 
-            } else { 
-                Log.d("DataStore_Map", "SelectedCards: Found value in Prefs for key '${SELECTED_CARDS_KEY.name}': $currentSelection")
-                currentSelection 
-            }
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { prefs ->
+            prefs[SELECTED_CARDS_KEY]?.takeIf { it.isNotEmpty() } ?: DEFAULT_SELECTED_CARDS
         }
 
-    // ORA definiamo gli StateFlow pubblici (condivisi)
-    override val playerName: StateFlow<String> = playerNameSourceFlow.stateIn(
-        scope = externalScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = DEFAULT_PLAYER_NAME
-    )
+    private val topRankingSourceFlow = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { prefs ->
+            prefs[TOP_RANKING_KEY]?.let {
+                try { json.decodeFromString<List<ScoreEntry>>(it) } catch (e: Exception) { 
+                    Log.e("DataStore_Map", "Error decoding topRanking: ${e.message}", e)
+                    DEFAULT_TOP_RANKING 
+                }
+            } ?: DEFAULT_TOP_RANKING
+        }
 
-    override val selectedBackgrounds: StateFlow<Set<String>> = selectedBackgroundsSourceFlow.stateIn(
-        scope = externalScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = DEFAULT_SELECTED_BACKGROUNDS
-    )
+    private val lastPlayedEntrySourceFlow = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { prefs ->
+            prefs[LAST_PLAYED_ENTRY_KEY]?.let {
+                try { json.decodeFromString<ScoreEntry?>(it) } catch (e: Exception) { 
+                    Log.e("DataStore_Map", "Error decoding lastPlayedEntry: ${e.message}", e)
+                    DEFAULT_LAST_PLAYED_ENTRY 
+                }
+            } ?: DEFAULT_LAST_PLAYED_ENTRY
+        }
 
-    override val selectedCards: StateFlow<Set<String>> = selectedCardsSourceFlow.stateIn(
-        scope = externalScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = DEFAULT_SELECTED_CARDS // Qui NON usiamo la sentinella per ora, testiamo prima questo approccio
-    )
+    override val playerName: StateFlow<String> = playerNameSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_PLAYER_NAME)
+    override val selectedBackgrounds: StateFlow<Set<String>> = selectedBackgroundsSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_SELECTED_BACKGROUNDS)
+    override val selectedCards: StateFlow<Set<String>> = selectedCardsSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_SELECTED_CARDS)
+    override val topRanking: StateFlow<List<ScoreEntry>> = topRankingSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_TOP_RANKING)
+    override val lastPlayedEntry: StateFlow<ScoreEntry?> = lastPlayedEntrySourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_LAST_PLAYED_ENTRY)
 
-    // E POI il blocco init che opera sugli StateFlow pubblici
     init {
         externalScope.launch {
             Log.d("DataStore", "Initializing RealAppSettingsDataStore - waiting for shared StateFlows to emit their first value...")
-            
-            // Attendiamo che ciascuno degli StateFlow PUBBLICI emetta il suo primo valore.
-            val pName = playerName.first() 
-            Log.d("DataStore", "Shared playerName StateFlow has emitted: $pName")
-            
-            val sBg = selectedBackgrounds.first()
-            Log.d("DataStore", "Shared selectedBackgrounds StateFlow has emitted: $sBg")
-            
-            val sCards = selectedCards.first() // Questo leggerà dallo StateFlow condiviso this.selectedCards
-            Log.d("DataStore", "Shared selectedCards StateFlow has emitted: $sCards")
-            
+            playerName.first()
+            selectedBackgrounds.first()
+            selectedCards.first()
+            topRanking.first()
+            lastPlayedEntry.first()
             Log.d("DataStore", "All shared StateFlows have emitted. Setting isDataLoaded to true.")
             _isDataLoaded.value = true
         }
     }
 
     override suspend fun savePlayerName(name: String) {
-        dataStore.edit { settings -> settings[PLAYER_NAME_KEY] = name }
+        dataStore.edit { it[PLAYER_NAME_KEY] = name }
     }
 
     override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
-        dataStore.edit { settings -> settings[SELECTED_BACKGROUNDS_KEY] = backgrounds }
+        dataStore.edit { it[SELECTED_BACKGROUNDS_KEY] = backgrounds }
     }
 
     override suspend fun saveSelectedCards(selectedCardsToSave: Set<String>) {
-        Log.d("DataStore", "saveSelectedCards - About to edit DataStore for key '${SELECTED_CARDS_KEY.name}' with: $selectedCardsToSave")
-        dataStore.edit { preferences ->
-            preferences[SELECTED_CARDS_KEY] = selectedCardsToSave
-            Log.d("DataStore", "saveSelectedCards - DataStore edit block completed for: $selectedCardsToSave")
+        dataStore.edit { it[SELECTED_CARDS_KEY] = selectedCardsToSave }
+    }
+
+    override suspend fun saveScore(playerName: String, score: Int) {
+        val newEntry = ScoreEntry(playerName = playerName, score = score, timestamp = System.currentTimeMillis())
+        Log.d("DataStore", "Saving new score: $newEntry")
+
+        // Salva come lastPlayedEntry
+        dataStore.edit {
+            val jsonLastPlayed = json.encodeToString(newEntry)
+            it[LAST_PLAYED_ENTRY_KEY] = jsonLastPlayed
+            Log.d("DataStore", "Saved lastPlayedEntry JSON: $jsonLastPlayed")
         }
-        Log.d("DataStore", "saveSelectedCards - Exiting function after edit for: $selectedCardsToSave")
+
+        // Aggiorna topRanking in modo sincronizzato
+        rankingMutex.withLock {
+            val currentRankingJson = dataStore.data.first()[TOP_RANKING_KEY]
+            val currentRanking = currentRankingJson?.let {
+                try { json.decodeFromString<List<ScoreEntry>>(it) } catch (e: Exception) { emptyList() }
+            } ?: emptyList()
+            
+            Log.d("DataStore", "Current topRanking before adding new score: $currentRanking")
+
+            val updatedRanking = (currentRanking + newEntry)
+                .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenByDescending { it.timestamp })
+                .take(ScoreEntry.MAX_RANKING_ENTRIES)
+            
+            Log.d("DataStore", "Updated topRanking: $updatedRanking")
+
+            dataStore.edit {
+                val jsonTopRanking = json.encodeToString(updatedRanking)
+                it[TOP_RANKING_KEY] = jsonTopRanking
+                Log.d("DataStore", "Saved topRanking JSON: $jsonTopRanking")
+            }
+        }
     }
 }
