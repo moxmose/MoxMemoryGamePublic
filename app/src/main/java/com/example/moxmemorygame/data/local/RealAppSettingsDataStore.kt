@@ -6,14 +6,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey // Import per intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.moxmemorygame.model.ScoreEntry
-// L'import di IAppSettingsDataStore verrà aggiornato automaticamente se necessario,
-// o era già esplicito e corretto se IAppSettingsDataStore era in un package diverso.
-// Se IAppSettingsDataStore era nello stesso package radice, l'import non era necessario
-// ma ora lo diventerà.
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,15 +29,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.IOException
 
-// Questa definizione top-level si sposta con il file e apparterrà al package com.example.moxmemorygame.data.local
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class RealAppSettingsDataStore(
     private val context: Context,
     private val externalScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-) : IAppSettingsDataStore { // L'interfaccia IAppSettingsDataStore verrà risolta dal nuovo package
+) : IAppSettingsDataStore {
 
-    // Mutex per sincronizzare gli accessi in scrittura a topRanking
     private val rankingMutex = Mutex()
 
     companion object {
@@ -49,6 +44,9 @@ class RealAppSettingsDataStore(
         val SELECTED_CARDS_KEY = stringSetPreferencesKey("selected_cards")
         val TOP_RANKING_KEY = stringPreferencesKey("top_ranking")
         val LAST_PLAYED_ENTRY_KEY = stringPreferencesKey("last_played_entry")
+        // NUOVE CHIAVI
+        val BOARD_WIDTH_KEY = intPreferencesKey("board_width")
+        val BOARD_HEIGHT_KEY = intPreferencesKey("board_height")
 
         const val DEFAULT_PLAYER_NAME = "Default Player"
         val DEFAULT_SELECTED_BACKGROUNDS = setOf("background_00")
@@ -60,6 +58,9 @@ class RealAppSettingsDataStore(
         )
         val DEFAULT_TOP_RANKING = emptyList<ScoreEntry>()
         val DEFAULT_LAST_PLAYED_ENTRY = null
+        // NUOVI VALORI DI DEFAULT
+        const val DEFAULT_BOARD_WIDTH = 4
+        const val DEFAULT_BOARD_HEIGHT = 5 // (4x5 = 20 carte, 10 coppie)
     }
 
     private val dataStore = context.dataStore
@@ -105,12 +106,23 @@ class RealAppSettingsDataStore(
                 }
             } ?: DEFAULT_LAST_PLAYED_ENTRY
         }
+    // NUOVI FLUSSI SORGENTE
+    private val selectedBoardWidthSourceFlow = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[BOARD_WIDTH_KEY] ?: DEFAULT_BOARD_WIDTH }
+
+    private val selectedBoardHeightSourceFlow = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[BOARD_HEIGHT_KEY] ?: DEFAULT_BOARD_HEIGHT }
 
     override val playerName: StateFlow<String> = playerNameSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_PLAYER_NAME)
     override val selectedBackgrounds: StateFlow<Set<String>> = selectedBackgroundsSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_SELECTED_BACKGROUNDS)
     override val selectedCards: StateFlow<Set<String>> = selectedCardsSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_SELECTED_CARDS)
     override val topRanking: StateFlow<List<ScoreEntry>> = topRankingSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_TOP_RANKING)
     override val lastPlayedEntry: StateFlow<ScoreEntry?> = lastPlayedEntrySourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_LAST_PLAYED_ENTRY)
+    // NUOVE IMPLEMENTAZIONI STATEFLOW
+    override val selectedBoardWidth: StateFlow<Int> = selectedBoardWidthSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_BOARD_WIDTH)
+    override val selectedBoardHeight: StateFlow<Int> = selectedBoardHeightSourceFlow.stateIn(externalScope, SharingStarted.WhileSubscribed(5000), DEFAULT_BOARD_HEIGHT)
 
     init {
         externalScope.launch {
@@ -120,6 +132,9 @@ class RealAppSettingsDataStore(
             selectedCards.first()
             topRanking.first()
             lastPlayedEntry.first()
+            // AGGIUNTA LETTURA INIZIALE
+            selectedBoardWidth.first()
+            selectedBoardHeight.first()
             Log.d("DataStore", "All shared StateFlows have emitted. Setting isDataLoaded to true.")
             _isDataLoaded.value = true
         }
@@ -141,14 +156,12 @@ class RealAppSettingsDataStore(
         val newEntry = ScoreEntry(playerName = playerName, score = score, timestamp = System.currentTimeMillis())
         Log.d("DataStore", "Saving new score: $newEntry")
 
-        // Salva come lastPlayedEntry
         dataStore.edit {
             val jsonLastPlayed = json.encodeToString(newEntry)
             it[LAST_PLAYED_ENTRY_KEY] = jsonLastPlayed
             Log.d("DataStore", "Saved lastPlayedEntry JSON: $jsonLastPlayed")
         }
 
-        // Aggiorna topRanking in modo sincronizzato
         rankingMutex.withLock {
             val currentRankingJson = dataStore.data.first()[TOP_RANKING_KEY]
             val currentRanking = currentRankingJson?.let {
@@ -168,6 +181,14 @@ class RealAppSettingsDataStore(
                 it[TOP_RANKING_KEY] = jsonTopRanking
                 Log.d("DataStore", "Saved topRanking JSON: $jsonTopRanking")
             }
+        }
+    }
+
+    // NUOVA FUNZIONE DI SALVATAGGIO
+    override suspend fun saveBoardDimensions(width: Int, height: Int) {
+        dataStore.edit {
+            it[BOARD_WIDTH_KEY] = width
+            it[BOARD_HEIGHT_KEY] = height
         }
     }
 }

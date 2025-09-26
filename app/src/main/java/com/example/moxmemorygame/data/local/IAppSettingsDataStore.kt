@@ -44,6 +44,16 @@ interface IAppSettingsDataStore {
     val isDataLoaded: StateFlow<Boolean>
 
     /**
+     * A [StateFlow] emitting the selected board width.
+     */
+    val selectedBoardWidth: StateFlow<Int> // NUOVA PROPRIETÀ
+
+    /**
+     * A [StateFlow] emitting the selected board height.
+     */
+    val selectedBoardHeight: StateFlow<Int> // NUOVA PROPRIETÀ
+
+    /**
      * Saves the player's name.
      * @param name The new name to save.
      */
@@ -68,4 +78,11 @@ interface IAppSettingsDataStore {
      * @param score The score achieved.
      */
     suspend fun saveScore(playerName: String, score: Int)
+
+    /**
+     * Saves the selected board dimensions.
+     * @param width The new board width to save.
+     * @param height The new board height to save.
+     */
+    suspend fun saveBoardDimensions(width: Int, height: Int) // NUOVA FUNZIONE
 }
