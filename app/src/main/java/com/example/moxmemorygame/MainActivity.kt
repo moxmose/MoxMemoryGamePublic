@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.widget.Space
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.activity.enableEdgeToEdge // Assicurati sia presente
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,18 +40,26 @@ import org.koin.core.context.startKoin
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Secondo la documentazione, installSplashScreen va chiamato PRIMA di super.onCreate
         val splashScreen = installSplashScreen()
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        super.onCreate(savedInstanceState) // Chiamata a super.onCreate
+
+        // Determina se abilitare edge-to-edge in base alla larghezza dello schermo
+        val screenWidthDp = resources.configuration.screenWidthDp
+        // Definiamo una soglia per tablet; 600dp è comune, ma puoi aggiustarla
+        val isConsideredPhone = screenWidthDp < 600
+
+        if (isConsideredPhone) {
+            enableEdgeToEdge() // Abilita solo per i "telefoni"
+        }
+        // Per i "tablet" (screenWidthDp >= 600), enableEdgeToEdge() non viene chiamato,
+        // quindi l'app non sarà edge-to-edge e la status bar non coprirà il contenuto.
 
         setContent {
             MoxMemoryGameTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-
-                    // set and lock screen in portrait mode
-                    val context = LocalContext.current
-                    (context as? Activity)?.requestedOrientation = ActivityInfo. SCREEN_ORIENTATION_PORTRAIT
 
                     NavGraph(innerPadding = innerPadding)
                     /*MainApp(
