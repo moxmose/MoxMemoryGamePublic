@@ -21,7 +21,7 @@ val Typography = Typography(
         fontFamily = kanit,
         fontWeight = FontWeight.Medium,
         fontSize = 18.sp,
-        lineHeight = 22.sp,
+        lineHeight = 20.sp,    // MODIFICATO DA 22.sp
         letterSpacing = 0.5.sp
     ),
     labelLarge = TextStyle(

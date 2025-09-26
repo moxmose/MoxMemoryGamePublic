@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight // Import per wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -37,23 +39,23 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+// Import per stringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-// import com.example.moxmemorygame.ui.GameCard // Rimosso se non più usato direttamente qui
-// import com.example.moxmemorygame.ui.GameCardArray // Rimosso
-import com.example.moxmemorygame.ui.GameCardImages
-import com.example.moxmemorygame.ui.SoundUtils
-import com.example.moxmemorygame.ui.GameViewModel
-// import com.example.moxmemorygame.ui.BOARD_WIDTH // Rimosso
-// import com.example.moxmemorygame.ui.BOARD_HEIGHT // Rimosso
-import com.example.moxmemorygame.ui.formatDuration
-import com.example.moxmemorygame.model.GameBoard // Nuovo Import
-import com.example.moxmemorygame.model.BOARD_WIDTH // Nuovo Import
 import com.example.moxmemorygame.model.BOARD_HEIGHT // Nuovo Import
+import com.example.moxmemorygame.model.BOARD_WIDTH // Nuovo Import
+import com.example.moxmemorygame.model.GameBoard // Nuovo Import
+// Import per la classe R (se non già presente per altre risorse)
+// import com.example.moxmemorygame.R
+import com.example.moxmemorygame.ui.GameCardImages
+import com.example.moxmemorygame.ui.GameViewModel
+import com.example.moxmemorygame.ui.SoundUtils
+import com.example.moxmemorygame.ui.formatDuration
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.compose.getViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -97,13 +99,12 @@ fun GameApp(
     val timeGame by gameViewModel.currentTime.collectAsState()
     val timeGameString = timeGame.formatDuration()
 
-    // Recupera selectedBackgrounds dal ViewModel (o da dove è appropriato)
-    val selectedBackgrounds by gameViewModel.selectedBackgrounds.collectAsState() // Assumendo che GameViewModel esponga questo
+    val selectedBackgrounds by gameViewModel.selectedBackgrounds.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding), 
+            .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
         BackgroundImg(selectedBackgrounds = gameViewModel.selectedBackgrounds) // Passa lo StateFlow
@@ -138,7 +139,7 @@ fun GameApp(
             ShowTablePlay(
                 xDim = BOARD_WIDTH,
                 yDim = BOARD_HEIGHT,
-                tablePlay = tablePlay, // Ora si aspetta GameBoard
+                tablePlay = tablePlay,
                 gameCardImages = gameCardImages,
                 checkPlayCardTurned = checkPlayCardTurned,
                 modifier = Modifier
@@ -169,13 +170,13 @@ fun Head(
     ) {
         Row {
             Text(
-                text = "Score : $score",
+                text = stringResource(R.string.game_head_score, score),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Moves: $moves",
+                text = stringResource(R.string.game_head_moves, moves),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -183,7 +184,7 @@ fun Head(
         }
         Row {
             Text(
-                text = "Time: $timeGame",
+                text = stringResource(R.string.game_head_time, timeGame),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -196,7 +197,7 @@ fun Head(
 fun ShowTablePlay(
     xDim: Int,
     yDim: Int,
-    tablePlay: GameBoard, // Modificato da GameCardArray a GameBoard
+    tablePlay: GameBoard,
     @DrawableRes
     gameCardImages: List<Int>,
     checkPlayCardTurned: (Int, Int) -> Unit,
@@ -227,7 +228,7 @@ fun ShowTablePlay(
                             .clickable { checkPlayCardTurned( x,y ) },
                         contentScale = if (!turned) ContentScale.FillBounds
                         else ContentScale.Crop,
-                        contentDescription = ""
+                        contentDescription = if (!turned) stringResource(R.string.game_card_content_description_back) else stringResource(R.string.game_card_content_description_face)
                     )
                     Spacer(Modifier.weight(1f))
                 }
@@ -258,7 +259,7 @@ fun Tail(
             ),
             modifier = Modifier.weight(1f)
         ) {
-            Text("RESET")
+            Text(stringResource(R.string.game_tail_button_reset), style = MaterialTheme.typography.bodyLarge)
         }
         Spacer( modifier = Modifier.padding(5.dp))
         Button (
@@ -271,7 +272,7 @@ fun Tail(
             ),
             modifier = Modifier.weight(1f)
         ) {
-            Text("PAUSE")
+            Text(stringResource(R.string.game_tail_button_pause), style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
@@ -279,17 +280,17 @@ fun Tail(
 @Composable
 fun BackgroundImg(
     selectedBackgrounds: StateFlow<Set<String>>,
-    modifier: Modifier = Modifier.fillMaxSize(), // Default modifier
-    alpha: Float = 0.5f // Default alpha
+    modifier: Modifier = Modifier.fillMaxSize(),
+    alpha: Float = 0.5f
 ) {
     val context = LocalContext.current
     val currentSelectedSet by selectedBackgrounds.collectAsState()
 
     val backgroundNameToDisplay = remember(currentSelectedSet) {
         if (currentSelectedSet.isNotEmpty()) {
-            currentSelectedSet.randomOrNull() ?: "background_00" // Fallback se randomOrNull dà null (improbabile)
+            currentSelectedSet.randomOrNull() ?: "background_00"
         } else {
-            "background_00" // Default se il set è vuoto
+            "background_00"
         }
     }
 
@@ -301,25 +302,22 @@ fun BackgroundImg(
                 context.packageName
             )
         } catch (e: Exception) {
-            // Fallback in caso di errore nel trovare la risorsa
-            R.drawable.background_00 // Assicurati che R.drawable.background_00 esista
+            R.drawable.background_00
         }
     }
 
-    if (drawableId != 0) { // Controlla se l'ID è valido
+    if (drawableId != 0) {
         Image(
             painter = painterResource(id = drawableId),
-            contentDescription = null,
+            contentDescription = null, // Backgrounds are decorative
             alpha = alpha,
             contentScale = ContentScale.Crop,
             modifier = modifier
         )
     } else {
-        // Opzionale: mostra un placeholder o un colore di sfondo se l'ID non è valido
-        // Ad esempio, per R.drawable.background_00 se non è stato trovato
         Image(
-            painter = painterResource(id = R.drawable.background_00), // Assicurati che esista
-            contentDescription = "Default background due to error",
+            painter = painterResource(id = R.drawable.background_00),
+            contentDescription = stringResource(R.string.game_background_default_error_description),
             alpha = alpha,
             contentScale = ContentScale.Crop,
             modifier = modifier
@@ -361,11 +359,12 @@ fun PauseDialog(
             ) {
                 Image(
                     painter = painterResource(R.drawable.card_pause),
-                    contentDescription = "PAUSE",
+                    contentDescription = stringResource(R.string.game_dialog_pause_image_description),
                     contentScale = ContentScale.Fit,
                 )
                 Text(
-                    text = "CLICK TO EXIT PAUSE",
+                    text = stringResource(R.string.game_dialog_pause_exit_prompt),
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(16.dp),
                 )
             }
@@ -380,7 +379,7 @@ fun ResetDialog(
 ) {
     Dialog(
         onDismissRequest = { onDismissRequest() },
-        properties = DialogProperties(
+        properties = DialogProperties( 
             dismissOnBackPress = false,
             dismissOnClickOutside = false
         )
@@ -388,8 +387,8 @@ fun ResetDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(493.dp)
-                .padding(16.dp),
+                .wrapContentHeight()
+                .padding(16.dp), 
             shape = RoundedCornerShape(
                 topStart = 1.dp,
                 topEnd = 16.dp,
@@ -399,27 +398,31 @@ fun ResetDialog(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Image(
                     painter = painterResource(R.drawable.card_reset),
-                    contentDescription = "PAUSE",
+                    contentDescription = stringResource(R.string.game_dialog_reset_image_description),
                     contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = "RESET GAME",
+                    text = stringResource(R.string.game_dialog_reset_title),
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    text = "ARE YOU SURE?",
-                    modifier = Modifier.padding(0.dp),
+                    text = stringResource(R.string.game_dialog_reset_confirmation_prompt),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 0.dp),
                 )
+                Spacer(modifier = Modifier.height(16.dp)) // MODIFICATO da 24.dp
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp),
+                        .padding(bottom = 8.dp, start = 8.dp, end = 8.dp), 
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Button(
@@ -428,24 +431,22 @@ fun ResetDialog(
                             topStart = 1.dp,
                             topEnd = 16.dp,
                             bottomStart = 16.dp,
-                            bottomEnd = 1.dp
-                        ),
+                            bottomEnd = 1.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("BACK")
+                        Text(stringResource(R.string.button_cancel), style = MaterialTheme.typography.bodyLarge)
                     }
-                    Spacer( modifier = Modifier.padding(5.dp))
+                    Spacer(modifier = Modifier.padding(horizontal = 8.dp))
                     Button(
                         onClick = { onConfirmation() },
                         shape = RoundedCornerShape(
                             topStart = 16.dp,
                             topEnd = 1.dp,
                             bottomStart = 1.dp,
-                            bottomEnd = 16.dp
-                        ),
+                            bottomEnd = 16.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("RESET")
+                        Text(stringResource(R.string.button_ok), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
@@ -468,10 +469,8 @@ fun GameWonDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(466.dp)
-                .padding(16.dp)
-                .clickable { onDismissRequest() }
-            ,
+                .height(420.dp)
+                .padding(16.dp),
             shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 1.dp,
@@ -481,37 +480,98 @@ fun GameWonDialog(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Image(
                     painter = painterResource(R.drawable.card_win),
-                    contentDescription = "COMPLETED",
-                    contentScale = ContentScale.Fit
+                    contentDescription = stringResource(R.string.game_dialog_won_title),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.height(150.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.game_dialog_won_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "CONGRATULATION!",
-                    modifier = Modifier.padding(16.dp),
+                    text = stringResource(R.string.game_dialog_won_subtitle),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
                 Text(
-                    text = "FINAL SCORE: $score",
-                    fontWeight = FontWeight.Bold,
+                    text = stringResource(R.string.game_dialog_won_score_info, score),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
-                Text(
-                    text = "CLICK TO SAVE SCORE", // Modificato qui
-                    modifier = Modifier.padding(16.dp),
-                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = { onDismissRequest() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(
+                        topStart = 1.dp,
+                        topEnd = 16.dp,
+                        bottomStart = 16.dp,
+                        bottomEnd = 1.dp
+                    )
+                ) {
+                    Text(stringResource(R.string.game_dialog_won_button_main_menu), style = MaterialTheme.typography.bodyLarge)
+                }
             }
         }
     }
 }
 
 
+@Preview(showBackground = true)
+@Composable
+fun HeadPreview() {
+    MaterialTheme {
+        Head(score = 123, moves = 45, timeGame = "01:23")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TailPreview() {
+    MaterialTheme {
+        Tail(actionOnPause = {}, actionOnReset = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PauseDialogPreview() {
+    MaterialTheme {
+        PauseDialog (onDismissRequest = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ResetDialogPreview() {
+    MaterialTheme {
+        ResetDialog (onDismissRequest = {}, onConfirmation = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GameWonDialogPreview() {
+    MaterialTheme {
+        GameWonDialog(onDismissRequest = {}, score = 1500)
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.HONEYCOMB_MR2)
 @Composable
 fun Testing(
-    tablePlay: GameBoard, // Modificato da GameCardArray a GameBoard
+    tablePlay: GameBoard, 
     setPlayCardTurned: (Int, Int, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -579,9 +639,9 @@ fun Testing(
 
 @Composable
 fun TestingDelayUsingList(
-    tablePlay: GameBoard, // Modificato da GameCardArray a GameBoard
+    tablePlay: GameBoard, 
     setPlayCardTurned: (Int, Int, Boolean) -> Unit,
-    testList: SnapshotStateList<com.example.moxmemorygame.model.GameCard>, // Assicurarsi che l'import sia corretto
+    testList: SnapshotStateList<com.example.moxmemorygame.model.GameCard>, 
     testValue: MutableState<com.example.moxmemorygame.model.GameCard>,
     testListFun: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -656,10 +716,10 @@ fun TestingPreview() {
             timeGame = "05:39"
         )
         val gameCardImages = GameCardImages().image
-        val tablePlay = GameBoard() // Modificato da GameCardArray a GameBoard
+        val tablePlay = GameBoard() 
         ShowTablePlay(
             xDim = BOARD_WIDTH,
-            yDim = BOARD_HEIGHT, // Assicurarsi che usi BOARD_HEIGHT dal model
+            yDim = BOARD_HEIGHT, 
             tablePlay = tablePlay,
             gameCardImages = gameCardImages,
             checkPlayCardTurned = {x, y -> },

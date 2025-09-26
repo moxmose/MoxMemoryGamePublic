@@ -25,6 +25,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+// Import per stringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,9 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.BackgroundImg
-// Import corretto per IAppSettingsDataStore
-import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+// Import per la classe R
+import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.ScoreEntry
 import org.koin.androidx.compose.koinViewModel
 
@@ -68,10 +71,12 @@ fun OpeningMenuScreen(
                 // Item 1: Titolo
                 item {
                     Text(
-                        text = "MOX MEMORY GAME",
+                        text = stringResource(R.string.opening_menu_title),
                         style = MaterialTheme.typography.headlineLarge,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp, bottom = 24.dp) // Spazio sopra e sotto il titolo
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp, bottom = 24.dp) // Spazio sopra e sotto il titolo
                     )
                 }
 
@@ -79,10 +84,12 @@ fun OpeningMenuScreen(
                 if (topRanking.isNotEmpty()) {
                     item {
                         Text(
-                            text = "TOP RANKING",
+                            text = stringResource(R.string.opening_menu_top_ranking),
                             style = MaterialTheme.typography.headlineSmall,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
                         )
                     }
                     itemsIndexed(topRanking.take(MAX_VISIBLE_RANKING_ENTRIES)) { index, entry ->
@@ -136,7 +143,7 @@ fun OpeningMenuScreen(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                 ) {
-                    Text(text = "START NEW GAME", fontSize = 16.sp)
+                    Text(text = stringResource(R.string.opening_menu_button_start_game), style = MaterialTheme.typography.bodyLarge)
                 }
                 Button(
                     onClick = viewModel::onSettingsClicked,
@@ -150,7 +157,7 @@ fun OpeningMenuScreen(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                 ) {
-                    Text(text = "SETTINGS", fontSize = 16.sp)
+                    Text(text = stringResource(R.string.opening_menu_button_settings), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         } // Fine Colonna principale
@@ -172,7 +179,7 @@ fun LastPlayedEntryView(entry: ScoreEntry) {
         Column(modifier = Modifier.padding(12.dp)) { // Padding generale della Card
             // Titolo della Card
             Text(
-                text = "LAST GAME", 
+                text = stringResource(R.string.opening_menu_last_game_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer, // Colore testo per coerenza con highlight
@@ -199,7 +206,7 @@ fun LastPlayedEntryView(entry: ScoreEntry) {
                     )
                 }
                 Text(
-                    text = "${entry.score} pts",
+                    text = stringResource(R.string.score_points_format, entry.score),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold, 
                     textAlign = TextAlign.End, 
@@ -235,7 +242,7 @@ fun RankingEntryView(rank: Int, entry: ScoreEntry, isHighlighted: Boolean) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "$rank.", 
+                text = stringResource(R.string.rank_number_format, rank),
                 style = MaterialTheme.typography.titleMedium,
                 color = textColor,
                 modifier = Modifier.weight(0.15f)
@@ -254,7 +261,7 @@ fun RankingEntryView(rank: Int, entry: ScoreEntry, isHighlighted: Boolean) {
                 )
             }
             Text(
-                text = "${entry.score} pts",
+                text = stringResource(R.string.score_points_format, entry.score),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.End,

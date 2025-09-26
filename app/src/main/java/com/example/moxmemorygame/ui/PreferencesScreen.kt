@@ -45,6 +45,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+// Import per stringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,13 +54,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.BackgroundImg
-// Import aggiornati
-import com.example.moxmemorygame.data.local.IAppSettingsDataStore // Aggiornato
-import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore // Per la Preview
-// RealAppSettingsDataStore non è importato direttamente qui perché non serve più dopo lo spostamento della classe Fake
+// Import per la classe R
+import com.example.moxmemorygame.R
+import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.BOARD_HEIGHT
 import com.example.moxmemorygame.model.BOARD_WIDTH
-import com.example.moxmemorygame.model.ScoreEntry 
+import com.example.moxmemorygame.model.ScoreEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -91,10 +93,10 @@ fun PreferencesScreen(
         cardSelectionError?.let {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = it,
+                    message = it, // This usually comes from ViewModel and might already be a string res or formatted
                     duration = androidx.compose.material3.SnackbarDuration.Short
                 )
-                preferencesViewModel.clearCardSelectionError() 
+                preferencesViewModel.clearCardSelectionError()
             }
         }
     }
@@ -119,25 +121,25 @@ fun PreferencesScreen(
             .fillMaxSize()
             .padding(innerPadding),
     ) {
-        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds) 
-        Column(modifier = Modifier.fillMaxSize()) { 
+        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds)
+        Column(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier
-                    .weight(1f) 
+                    .weight(1f)
                     .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
                 item {
-                    Text("PREFERENCES", style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.preferences_screen_title), style = MaterialTheme.typography.headlineMedium)
                 }
 
                 item {
                     OutlinedTextField(
                         value = tempPlayerName,
                         onValueChange = { if (it.length <= PreferencesViewModel.PLAYERNAME_MAX_LENGTH) tempPlayerName = it },
-                        label = { Text("PLAYER'S NAME [${tempPlayerName.length}/${PreferencesViewModel.PLAYERNAME_MAX_LENGTH}]") },
+                        label = { Text(stringResource(R.string.preferences_player_name_label, tempPlayerName.length, PreferencesViewModel.PLAYERNAME_MAX_LENGTH)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -156,7 +158,7 @@ fun PreferencesScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("SAVE PLAYER NAME")
+                        Text(stringResource(R.string.preferences_button_save_player_name), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -171,12 +173,12 @@ fun PreferencesScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("SELECT BACKGROUNDS\n(${selectedBackgroundsFromVM.size} selected)", textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.preferences_button_select_backgrounds, selectedBackgroundsFromVM.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
                 item {
-                    Text("CARD SELECTION:", style = MaterialTheme. typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+                    Text(stringResource(R.string.preferences_card_selection_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
                 }
 
                 item {
@@ -190,7 +192,7 @@ fun PreferencesScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("SELECT REFINED CARDS\n($selectedRefinedCount/${refinedCardResourceNames.size} selected)", textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.preferences_button_select_refined_cards, selectedRefinedCount, refinedCardResourceNames.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -203,17 +205,21 @@ fun PreferencesScreen(
                             bottomStart = 1.dp,
                             bottomEnd = 16.dp
                         ),
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     ) {
-                        Text("SELECT SIMPLE CARDS\n($selectedSimpleCount/${simpleCardResourceNames.size} selected)", textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.preferences_button_select_simple_cards, selectedSimpleCount, simpleCardResourceNames.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 item {
                     Text(
-                        "Minimum $minRequiredCards cards required in total (currently ${selectedCardsFromDataStore.size}).",
+                        stringResource(R.string.preferences_min_cards_required_info, minRequiredCards, selectedCardsFromDataStore.size),
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
                     )
                 }
 
@@ -229,7 +235,7 @@ fun PreferencesScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("BACK TO MAIN MENU")
+                        Text(stringResource(R.string.preferences_button_back_to_main_menu), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
@@ -243,7 +249,7 @@ fun PreferencesScreen(
             BackgroundSelectionDialog(
                 availableBackgrounds = availableBackgrounds,
                 initialSelectedBackgrounds = selectedBackgroundsFromVM,
-                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, 
+                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds,
                 onDismissRequest = { showBackgroundDialog = false },
                 onConfirm = { confirmedSelection ->
                     preferencesViewModel.confirmBackgroundSelections(confirmedSelection)
@@ -254,11 +260,11 @@ fun PreferencesScreen(
 
         if (showRefinedCardDialog) {
             CardSetSelectionDialog(
-                cardTypeDisplayName = "Refined",
+                cardTypeDisplayName = stringResource(R.string.card_type_refined),
                 availableCardsForThisSet = refinedCardResourceNames,
                 initiallySelectedCardsInThisSet = selectedCardsFromDataStore.filter { it.startsWith("img_c_") }.toSet(),
                 getCardDisplayName = preferencesViewModel::getCardDisplayName,
-                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds, 
+                selectedBackgroundsFlow = preferencesViewModel.selectedBackgrounds,
                 onDismissRequest = { showRefinedCardDialog = false },
                 onConfirm = { confirmedSelectionForSet ->
                     preferencesViewModel.confirmCardSelectionsForSet(confirmedSelectionForSet, "img_c_")
@@ -269,7 +275,7 @@ fun PreferencesScreen(
 
         if (showSimpleCardDialog) {
             CardSetSelectionDialog(
-                cardTypeDisplayName = "Simple",
+                cardTypeDisplayName = stringResource(R.string.card_type_simple),
                 availableCardsForThisSet = simpleCardResourceNames,
                 initiallySelectedCardsInThisSet = selectedCardsFromDataStore.filter { it.startsWith("img_s_") }.toSet(),
                 getCardDisplayName = preferencesViewModel::getCardDisplayName,
@@ -287,7 +293,7 @@ fun PreferencesScreen(
 
 @Composable
 fun CardSetSelectionDialog(
-    cardTypeDisplayName: String,
+    cardTypeDisplayName: String, // This will now be a resolved string
     availableCardsForThisSet: List<String>,
     initiallySelectedCardsInThisSet: Set<String>,
     getCardDisplayName: (String) -> String,
@@ -324,7 +330,9 @@ fun CardSetSelectionDialog(
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp), // Padding del Card rispetto al Dialog
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box {
@@ -333,39 +341,47 @@ fun CardSetSelectionDialog(
                     modifier = Modifier.matchParentSize(),
                     alpha = 0.15f
                 )
-                Column(modifier = Modifier.padding(16.dp)) {
+                // MODIFICA QUI: Rimossa .padding(start = 16.dp, end = 16.dp) dalla Column
+                Column(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)) {
                     Text(
-                        "Select $cardTypeDisplayName Cards",
+                        stringResource(R.string.card_set_selection_dialog_title, cardTypeDisplayName),
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                     Text(
-                        "(Click image to preview)",
+                        stringResource(R.string.dialog_click_image_to_preview),
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp, bottom = 8.dp)
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 4.dp, bottom = 8.dp)
                     )
 
                     LazyColumn(
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
                         item {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().clickable { toggleSelectAllForThisSet() }
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { toggleSelectAllForThisSet() }
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Checkbox(
                                     checked = tempSelectedCards.size == availableCardsForThisSet.size && availableCardsForThisSet.isNotEmpty(),
                                     onCheckedChange = { toggleSelectAllForThisSet() }
                                 )
-                                Text(text = "Select/Deselect All (${availableCardsForThisSet.size})")
+                                Text(text = stringResource(R.string.dialog_select_deselect_all_count, availableCardsForThisSet.size), style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                         items(availableCardsForThisSet) { cardName ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().clickable { toggleCardSelection(cardName) }
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { toggleCardSelection(cardName) }
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Checkbox(
                                     checked = tempSelectedCards.contains(cardName),
@@ -378,23 +394,28 @@ fun CardSetSelectionDialog(
                                 if (drawableId != 0) {
                                     Image(
                                         painter = painterResource(id = drawableId),
-                                        contentDescription = "Miniatura ${getCardDisplayName(cardName)}",
+                                        contentDescription = stringResource(R.string.dialog_item_thumbnail_description, getCardDisplayName(cardName)),
                                         contentScale = ContentScale.Crop,
-                                        modifier = Modifier.size(40.dp).padding(end = 8.dp).clickable { previewedImageName = cardName }
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .padding(end = 8.dp)
+                                            .clickable { previewedImageName = cardName }
                                     )
                                 } else {
                                     Spacer(Modifier.size(40.dp).padding(end = 8.dp))
                                 }
                                 Text(
                                     text = getCardDisplayName(cardName),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
+                    // La Row dei pulsanti mantiene il suo padding(horizontal = 8.dp)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Button(
@@ -402,7 +423,7 @@ fun CardSetSelectionDialog(
                             shape = RoundedCornerShape(topStart = 1.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 1.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("CANCEL", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.button_cancel), style = MaterialTheme.typography.bodyLarge)
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Button(
@@ -410,7 +431,7 @@ fun CardSetSelectionDialog(
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("OK", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.button_ok), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
@@ -436,7 +457,7 @@ fun BackgroundSelectionDialog(
     onConfirm: (Set<String>) -> Unit
 ) {
     var tempSelectedBgs by remember { mutableStateOf(initialSelectedBackgrounds) }
-    var previewedImageName by remember { mutableStateOf<String?>(null) } 
+    var previewedImageName by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     LaunchedEffect(initialSelectedBackgrounds) {
@@ -446,7 +467,7 @@ fun BackgroundSelectionDialog(
     val toggleSelection = { bgName: String ->
         val current = tempSelectedBgs.toMutableSet()
         if (current.contains(bgName)) {
-            if (current.size > 1) { 
+            if (current.size > 1) { // Ensure at least one is always selected
                 current.remove(bgName)
             }
         } else {
@@ -477,7 +498,7 @@ fun BackgroundSelectionDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp), // Padding del Card rispetto al Dialog
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box {
@@ -486,24 +507,26 @@ fun BackgroundSelectionDialog(
                     modifier = Modifier.matchParentSize(),
                     alpha = 0.15f
                 )
+                // MODIFICA QUI: Rimossa .padding(start = 16.dp, end = 16.dp) dalla Column
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                 ) {
                     Text(
-                        "Select Backgrounds",
+                        stringResource(R.string.background_selection_dialog_title),
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                     Text(
-                        "(Click image to preview)",
+                        stringResource(R.string.dialog_click_image_to_preview),
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp, bottom = 8.dp)
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 4.dp, bottom = 8.dp)
                     )
 
                     LazyColumn(
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
                         item {
                             Row(
@@ -511,12 +534,13 @@ fun BackgroundSelectionDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { toggleSelectAll() }
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Checkbox(
                                     checked = tempSelectedBgs.size == availableBackgrounds.size,
                                     onCheckedChange = { toggleSelectAll() }
                                 )
-                                Text(text = "Select/Deselect All", modifier = Modifier.padding(start = 8.dp))
+                                Text(text = stringResource(R.string.dialog_select_deselect_all), modifier = Modifier.padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                         items(availableBackgrounds) { bgName ->
@@ -524,45 +548,48 @@ fun BackgroundSelectionDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { toggleSelection(bgName) } 
+                                    .clickable { toggleSelection(bgName) }
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Checkbox(
                                     checked = tempSelectedBgs.contains(bgName),
-                                    onCheckedChange = { toggleSelection(bgName) } 
+                                    onCheckedChange = { toggleSelection(bgName) }
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                val drawableId = remember(bgName) { 
+                                val drawableId = remember(bgName) {
                                     try {
                                         context.resources.getIdentifier(bgName, "drawable", context.packageName)
                                     } catch (e: Exception) {
-                                        0 
+                                        0
                                     }
                                 }
                                 if (drawableId != 0) {
                                     Image(
                                         painter = painterResource(id = drawableId),
-                                        contentDescription = "Miniatura $bgName",
-                                        contentScale = ContentScale.Crop, 
+                                        contentDescription = stringResource(R.string.dialog_item_thumbnail_description, bgName.replace("_", " ")),
+                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier
-                                            .size(40.dp) 
-                                            .padding(end = 8.dp) 
-                                            .clickable { previewedImageName = bgName } 
+                                            .size(40.dp)
+                                            .padding(end = 8.dp)
+                                            .clickable { previewedImageName = bgName }
                                     )
                                 } else {
                                     Spacer(Modifier.size(40.dp).padding(end=8.dp))
                                 }
                                 Text(
-                                    text = bgName.replace("_", " ").replaceFirstChar { 
-                                        if (it.isLowerCase()) it.titlecase() else it.toString() 
+                                    text = bgName.replace("_", " ").replaceFirstChar { // Dynamic text, not from resources
+                                        if (it.isLowerCase()) it.titlecase() else it.toString()
                                     },
-                                    modifier = Modifier.weight(1f) 
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
+                    // La Row dei pulsanti mantiene il suo padding(horizontal = 8.dp)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Button(
@@ -570,7 +597,7 @@ fun BackgroundSelectionDialog(
                             shape = RoundedCornerShape(topStart = 1.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 1.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("CANCEL", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.button_cancel), style = MaterialTheme.typography.bodyLarge)
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Button(
@@ -578,7 +605,7 @@ fun BackgroundSelectionDialog(
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("OK", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.button_ok), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
@@ -588,7 +615,7 @@ fun BackgroundSelectionDialog(
 
     if (previewedImageName != null) {
         ImagePreviewDialog(
-            imageName = previewedImageName!!, 
+            imageName = previewedImageName!!,
             onDismissRequest = { previewedImageName = null }
         )
     }
@@ -597,7 +624,7 @@ fun BackgroundSelectionDialog(
 
 @Composable
 fun ImagePreviewDialog(
-    imageName: String,
+    imageName: String, // Dynamic
     onDismissRequest: () -> Unit
 ) {
     val context = LocalContext.current
@@ -607,31 +634,31 @@ fun ImagePreviewDialog(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize(0.9f) 
-                .background(Color.Black.copy(alpha = 0.75f)) 
-                .clickable(onClick = onDismissRequest), 
+                .fillMaxSize(0.9f)
+                .background(Color.Black.copy(alpha = 0.75f))
+                .clickable(onClick = onDismissRequest),
             contentAlignment = Alignment.Center
         ) {
             val drawableId = remember(imageName) {
                 try {
                     context.resources.getIdentifier(imageName, "drawable", context.packageName)
                 } catch (e: Exception) {
-                    0 
+                    0
                 }
             }
 
             if (drawableId != 0) {
                 Image(
                     painter = painterResource(id = drawableId),
-                    contentDescription = "Anteprima $imageName",
-                    contentScale = ContentScale.Fit, 
+                    contentDescription = stringResource(R.string.image_preview_dialog_content_description, imageName),
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .padding(16.dp) 
-                        .fillMaxWidth() 
+                        .padding(16.dp)
+                        .fillMaxWidth()
                 )
             } else {
                 Text(
-                    "Immagine non trovata",
+                    stringResource(R.string.image_preview_dialog_image_not_found),
                     color = Color.White,
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -646,13 +673,14 @@ fun ImagePreviewDialog(
 @Composable
 fun PreferencesScreenPreview() {
     val navController = rememberNavController()
-    // Utilizza la classe FakeAppSettingsDataStore dal nuovo package e con il nome semplificato
-    val fakeAppSettingsDataStore = FakeAppSettingsDataStore() 
+    val fakeAppSettingsDataStore = FakeAppSettingsDataStore()
     val fakeViewModel = PreferencesViewModel(navController, fakeAppSettingsDataStore)
-    PreferencesScreen(
-        preferencesViewModel = fakeViewModel,
-        innerPadding = PaddingValues(0.dp)
-    )
+    MaterialTheme { // Added MaterialTheme for proper preview
+        PreferencesScreen(
+            preferencesViewModel = fakeViewModel,
+            innerPadding = PaddingValues(0.dp)
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -662,7 +690,7 @@ fun BackgroundSelectionDialogPreview() {
     val initialSelected = setOf(availableBackgrounds[0], availableBackgrounds[2])
     val selectedFlow = MutableStateFlow(initialSelected).asStateFlow()
 
-    MaterialTheme { 
+    MaterialTheme {
         BackgroundSelectionDialog(
             availableBackgrounds = availableBackgrounds,
             initialSelectedBackgrounds = initialSelected,
@@ -673,7 +701,7 @@ fun BackgroundSelectionDialogPreview() {
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF) 
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
 fun CardSetSelectionDialogPreview() {
     MaterialTheme {
@@ -681,23 +709,23 @@ fun CardSetSelectionDialogPreview() {
         val initial = setOf(available[0], available[2])
         val selectedBgsFlow = MutableStateFlow(setOf("background_00"))
         CardSetSelectionDialog(
-            cardTypeDisplayName = "Refined Preview",
+            cardTypeDisplayName = stringResource(R.string.card_type_refined) + " Preview", // Example for Preview
             availableCardsForThisSet = available,
             initiallySelectedCardsInThisSet = initial,
             getCardDisplayName = { rn -> if (rn.startsWith("img_c_")) "Refined ${rn.removePrefix("img_c_")}" else rn },
             selectedBackgroundsFlow = selectedBgsFlow,
-            onDismissRequest = {},
-            onConfirm = {}
+            onDismissRequest = { },
+            onConfirm = { }
         )
     }
 }
 
 
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF) 
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
 fun ImagePreviewDialogPreview() {
     MaterialTheme {
-        val imageName = "background_01"
+        val imageName = "background_01" // Example, ensure this drawable exists for preview
         ImagePreviewDialog(
             imageName = imageName,
             onDismissRequest = {}
