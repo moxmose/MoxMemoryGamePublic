@@ -1,8 +1,9 @@
 package com.example.moxmemorygame.ui
 
-import android.util.Log // Assicurati che Log sia importato
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -10,17 +11,17 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.data.local.RealAppSettingsDataStore // Per fallback
-import com.example.moxmemorygame.model.GameBoard // Nuovo Import
-import com.example.moxmemorygame.model.GameCard // Nuovo Import
-import com.example.moxmemorygame.model.BOARD_WIDTH // Nuovo Import
-import com.example.moxmemorygame.model.BOARD_HEIGHT // Nuovo Import
+import com.example.moxmemorygame.model.GameBoard
+import com.example.moxmemorygame.model.GameCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first // Import per .first() su Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
+import kotlin.math.max
 
 class GameViewModel(
     private val navController: NavHostController,
@@ -44,8 +45,8 @@ class GameViewModel(
     private val noLastMove = Pair(-1, -1)
     private var cardInPlay: Boolean = false
 
-    private val _tablePlay = GameBoard() // Modificato da GameCardArray a GameBoard
-    val tablePlay: GameBoard get() = _tablePlay // Modificato da GameCardArray a GameBoard
+    private var _tablePlay: GameBoard? = null
+    val tablePlay: GameBoard? get() = _tablePlay
 
     @DrawableRes
     private lateinit var _gameCardImages: List<Int>
@@ -58,6 +59,9 @@ class GameViewModel(
     var gameResetRequest: MutableState<Boolean> = mutableStateOf(false)
     var gameWon: MutableState<Boolean> = mutableStateOf(false)
 
+    private val _isBoardInitialized = mutableStateOf(false)
+    val isBoardInitialized: State<Boolean> = _isBoardInitialized
+
     init {
         Log.d("GameVM", "init - Calling resetGame()")
         resetGame()
@@ -66,23 +70,26 @@ class GameViewModel(
     private fun resetGame() {
         Log.d("GameVM", "resetGame - Starting game reset process")
         viewModelScope.launch {
-            Log.d("GameVM", "resetGame - Coroutine launched, calling loadAndShuffleCards()")
+            _isBoardInitialized.value = false 
+            _tablePlay = null 
+            Log.d("GameVM", "resetGame - _isBoardInitialized set to false, _tablePlay set to null. Calling loadAndShuffleCards()")
             loadAndShuffleCards()
             
-            Log.d("GameVM", "resetGame - loadAndShuffleCards() completed, proceeding with main thread state reset")
+            Log.d("GameVM", "resetGame - loadAndShuffleCards() completed, proceeding with main thread state reset for UI elements")
             withContext(Dispatchers.Main) {
-                _score.intValue = 0
+                _score.intValue = 0 
                 _moves.intValue = 0
                 lastMove = noLastMove
                 cardInPlay = false
                 _gamePlayResetSound.value = true
+                // Questi stati sono cruciali per i dialoghi, assicurati che siano puliti dopo un reset completo.
                 gamePaused.value = false
                 gameResetRequest.value = false
-                gameWon.value = false
+                gameWon.value = false 
                 timerViewModel.resetTimer()
                 timerViewModel.startTimer()
                 timeOfLastMove = 0L
-                Log.d("GameVM", "resetGame - Main thread state reset completed")
+                Log.d("GameVM", "resetGame - Main thread UI state reset completed")
             }
         }
     }
@@ -92,67 +99,105 @@ class GameViewModel(
         appSettingsDataStore.isDataLoaded.filter { it }.first() 
         Log.d("GameVM", "loadAndShuffleCards - DataStore is loaded. Proceeding to load cards.")
 
-        val uniqueCardsNeeded = (BOARD_WIDTH * BOARD_HEIGHT) / 2
+        val boardWidth = appSettingsDataStore.selectedBoardWidth.first()
+        val boardHeight = appSettingsDataStore.selectedBoardHeight.first()
+        Log.d("GameVM", "loadAndShuffleCards - Fetched board dimensions: ${boardWidth}x${boardHeight}")
+
+        _tablePlay = GameBoard(boardWidth, boardHeight)
+        Log.d("GameVM", "loadAndShuffleCards - _tablePlay instance created with new dimensions.")
+
+        val uniqueCardsNeeded = (boardWidth * boardHeight) / 2
         var userSelectedResourceNames = appSettingsDataStore.selectedCards.first()
-        Log.d("GameVM", "loadAndShuffleCards - Read from DataStore: $userSelectedResourceNames")
 
         if (userSelectedResourceNames.size < uniqueCardsNeeded) {
-            Log.w("GameVM", "loadAndShuffleCards - User selected cards insufficient (${userSelectedResourceNames.size} < $uniqueCardsNeeded). Falling back to default.")
+            Log.w("GameVM", "loadAndShuffleCards - User selected cards insufficient. Falling back to default.")
             userSelectedResourceNames = RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS
         }
         
         val actualCardResourceNamesForGame = userSelectedResourceNames.shuffled().take(uniqueCardsNeeded)
-        Log.d("GameVM", "loadAndShuffleCards - Actual card resource names for game: $actualCardResourceNamesForGame")
-
         _gameCardImages = actualCardResourceNamesForGame.map { resourceName -> resourceNameToId(resourceName) }
-        Log.d("GameVM", "loadAndShuffleCards - Converted to resource IDs (_gameCardImages): $_gameCardImages")
+        Log.d("GameVM", "loadAndShuffleCards - Card images prepared.")
 
         val logicalCardIds = (0 until uniqueCardsNeeded).toList()
         val gameCardLogicalIdsForBoard = (logicalCardIds + logicalCardIds).shuffled()
-        Log.d("GameVM", "loadAndShuffleCards - Prepared logical IDs for board: $gameCardLogicalIdsForBoard")
 
         withContext(Dispatchers.Main) {
+            val board = _tablePlay
+            if (board == null) {
+                Log.e("GameVM", "loadAndShuffleCards - CRITICAL: _tablePlay is null before populating on Main thread. Aborting population.")
+                _isBoardInitialized.value = false 
+                return@withContext
+            }
+
             var i = 0
-            for(x in (0 until BOARD_WIDTH)) {
-                for(y in (0 until BOARD_HEIGHT)) {
+            for(x in (0 until boardWidth)) {
+                for(y in (0 until boardHeight)) {
                      if (i < gameCardLogicalIdsForBoard.size) { 
-                        _tablePlay.cardsArray[x][y].value = GameCard(
+                        board.cardsArray[x][y].value = GameCard(
                             id = gameCardLogicalIdsForBoard[i++],
                             turned = false,
                             coupled = false
                         )
+                    } else {
+                        Log.e("GameVM", "loadAndShuffleCards - Error: Not enough logical card IDs for board size!") 
                     }
                 }
             }
-            Log.d("GameVM", "loadAndShuffleCards - Finished populating _tablePlay on Main thread")
+            Log.d("GameVM", "loadAndShuffleCards - Finished populating _tablePlay on Main thread.")
+            _isBoardInitialized.value = true 
+            Log.d("GameVM", "loadAndShuffleCards - _isBoardInitialized set to true.")
         }
     }
 
-    fun onResetAndGoToOpeningMenu() {
+    // Chiamata dal GameWonDialog e dalla conferma del ResetDialog per tornare al menu
+    fun navigateToOpeningMenuAndCleanupDialogStates() {
+        Log.d("GameVM", "navigateToOpeningMenuAndCleanupDialogStates - Cleaning dialog states and navigating.")
+        gamePaused.value = false
+        gameResetRequest.value = false
+        gameWon.value = false // Assicura che lo stato di vittoria sia resettato
         navController.navigate(Screen.OpeningMenuScreen.route) {
-            popUpTo(navController.graph.startDestinationId) {
-                inclusive = true
-            }
+            popUpTo(navController.graph.startDestinationId) { inclusive = true }
             launchSingleTop = true
         }
     }
 
     fun checkGamePlayCardTurned(x: Int, y: Int,
-                                flipSound: () -> Unit,
-                                pauseSound: () -> Unit, 
-                                failSound: () -> Unit,
-                                successSound: () -> Unit,
-                                winSound: () -> Unit
-    ) {
+                                flipSound: () -> Unit, pauseSound: () -> Unit, failSound: () -> Unit,
+                                successSound: () -> Unit, winSound: () -> Unit) {
+        if (!isBoardInitialized.value) { 
+            Log.w("GameVM_Check", "Board not initialized. Ignoring.")
+            return
+        }
+        val currentBoard = _tablePlay
+        if (currentBoard == null) {
+            Log.e("GameVM_Check", "CRITICAL: _tablePlay is NULL. Aborting.")
+            cardInPlay = false
+            return
+        }
         if (cardInPlay) { return }
         cardInPlay = true
 
-        if (_tablePlay.cardsArray[x][y].value.coupled) {
+        val cardStateCurrentInitial = currentBoard.cardsArray.getOrNull(x)?.getOrNull(y)
+        if (cardStateCurrentInitial == null) {
+            Log.e("GameVM_Check", "CRITICAL: cardStateCurrentInitial at [$x][$y] is null. Aborting turn.")
+            cardInPlay = false
+            return
+        }
+        val cardValueCurrentInitial = cardStateCurrentInitial.value
+        if (cardValueCurrentInitial == null) {
+            Log.e("GameVM_Check", "CRITICAL: cardValueCurrentInitial at [$x][$y] is null. Aborting turn.")
             cardInPlay = false
             return
         }
 
-        if (lastMove == noLastMove && !_tablePlay.cardsArray[x][y].value.turned) {
+        if (cardValueCurrentInitial.coupled) {
+            cardInPlay = false
+            return
+        }
+
+        val currentElapsedTime = currentTime.value
+        if (lastMove == noLastMove && !cardValueCurrentInitial.turned) {
+            timeOfLastMove = currentElapsedTime
             lastMove = Pair(x, y)
             flipSound()
             _moves.intValue++
@@ -162,7 +207,7 @@ class GameViewModel(
         } else {
             _moves.intValue++
             if (lastMove == Pair(x, y)) {
-                refreshPointsNoCoupleSelected()
+                refreshPointsNoCoupleSelected(currentElapsedTime - timeOfLastMove)
                 lastMove = noLastMove
                 flipSound()
                 setTablePlayCardTurned(x = x,y = y, newTurnedState = false)
@@ -170,23 +215,53 @@ class GameViewModel(
                 return
             } else {
                 setTablePlayCardTurned(x = x,y = y, newTurnedState = true)
-                if (_tablePlay.cardsArray[lastMove.first][lastMove.second].value.id ==
-                    _tablePlay.cardsArray[x][y].value.id
-                ) {
-                    refreshPointsRightCouple()
-                    // Ora che GameCard è una data class, usiamo copy() per modificare lo stato coupled
-                    _tablePlay.cardsArray[lastMove.first][lastMove.second].value = _tablePlay.cardsArray[lastMove.first][lastMove.second].value.copy(coupled = true)
-                    _tablePlay.cardsArray[x][y].value = _tablePlay.cardsArray[x][y].value.copy(coupled = true)
+                
+                val cardStateLast = currentBoard.cardsArray.getOrNull(lastMove.first)?.getOrNull(lastMove.second)
+                if (cardStateLast == null) {
+                    Log.e("GameVM_Check", "CRITICAL: cardStateLast at [${lastMove.first}][${lastMove.second}] is null. Aborting comparison.")
+                    lastMove = noLastMove
+                    setTablePlayCardTurned(x = x,y = y, newTurnedState = false)
+                    cardInPlay = false
+                    return
+                }
+                val cardValueLast = cardStateLast.value
+                if (cardValueLast == null) {
+                    Log.e("GameVM_Check", "CRITICAL: cardValueLast at [${lastMove.first}][${lastMove.second}] is null. Aborting comparison.")
+                    lastMove = noLastMove
+                    setTablePlayCardTurned(x = x,y = y, newTurnedState = false)
+                    cardInPlay = false
+                    return
+                }
+
+                val cardStateCurrentAfterTurn = currentBoard.cardsArray.getOrNull(x)?.getOrNull(y)
+                if (cardStateCurrentAfterTurn == null) {
+                    Log.e("GameVM_Check", "CRITICAL: cardStateCurrentAfterTurn at [$x][$y] is null. Aborting comparison.")
+                    lastMove = noLastMove 
+                    cardInPlay = false
+                    return
+                }
+                val cardValueCurrentAfterTurn = cardStateCurrentAfterTurn.value
+                if (cardValueCurrentAfterTurn == null) {
+                    Log.e("GameVM_Check", "CRITICAL: cardValueCurrentAfterTurn at [$x][$y] is null. Aborting comparison.")
+                    lastMove = noLastMove 
+                    cardInPlay = false
+                    return
+                }
+
+                if (cardValueLast.id == cardValueCurrentAfterTurn.id) {
+                    refreshPointsRightCouple(currentElapsedTime - timeOfLastMove)
+                    cardStateLast.value = cardValueLast.copy(coupled = true)
+                    cardStateCurrentAfterTurn.value = cardValueCurrentAfterTurn.copy(coupled = true)
+                    timeOfLastMove = currentElapsedTime
                     
                     if(checkAllCardsCoupled()) {
                         winSound()
-                        gameWon.value = true
-                        setResetPause()
-                        // Salva il punteggio quando il gioco è vinto
+                        gameWon.value = true 
+                        requestPauseDialog() // Mostra GameWonDialog tramite gamePaused=true
                         viewModelScope.launch {
                             val pName = appSettingsDataStore.playerName.first()
-                            val finalScore = _score.intValue
-                            appSettingsDataStore.saveScore(pName, finalScore)
+                            val finalScore = _score.intValue 
+                            appSettingsDataStore.saveScore(pName, finalScore) 
                             Log.d("GameVM", "Game won! Saved score: $finalScore for player: $pName")
                         }
                     } else {
@@ -196,8 +271,9 @@ class GameViewModel(
                     cardInPlay = false
                     return
                 } else {
-                    refreshPointsWrongCouple()
+                    refreshPointsWrongCouple(currentElapsedTime - timeOfLastMove)
                     failSound()
+                    timeOfLastMove = currentElapsedTime
                     viewModelScope.launch(Dispatchers.Default) {
                         delay(1400L)
                         withContext(Dispatchers.Main) {
@@ -213,54 +289,146 @@ class GameViewModel(
     }
 
     private fun setTablePlayCardTurned(x: Int, y: Int, newTurnedState: Boolean) {
-        require(x in _tablePlay.cardsArray.indices) { "x coordinate is out of bounds" }
-        require(y in _tablePlay.cardsArray[x].indices) { "y coordinate is out of bounds" }
-        // Utilizza il metodo copy() fornito dalla data class GameCard
-        with(_tablePlay.cardsArray[x][y]) { value = value.copy(turned = newTurnedState) }
+        if (!isBoardInitialized.value) return
+        val currentBoard = _tablePlay
+        if (currentBoard == null) {
+            Log.e("GameVM_SetTurned", "CRITICAL: _tablePlay is NULL. Aborting update.")
+            return
+        }
+        
+        val cardState = currentBoard.cardsArray.getOrNull(x)?.getOrNull(y)
+        if (cardState == null) {
+            Log.e("GameVM_SetTurned", "CRITICAL: cardState at [$x][$y] is null. Aborting update.")
+            return
+        }
+        val cardValue = cardState.value
+        if (cardValue == null) {
+             Log.e("GameVM_SetTurned", "CRITICAL: cardValue at [$x][$y] (from cardState.value) is null. Aborting update.")
+            return
+        }
+        cardState.value = cardValue.copy(turned = newTurnedState)
     }
 
-    fun setResetPause() {
-        if (!gamePaused.value) {
-            gamePaused.value = true
-            timerViewModel.pauseTimer()
-        } else {
-            gamePaused.value = false
-            timerViewModel.resumeTimer()
+    // Chiamata dal pulsante Pausa o quando si vince
+    fun requestPauseDialog() { 
+        Log.d("GameVM", "requestPauseDialog - Setting gamePaused = true")
+        gamePaused.value = true 
+    }
+
+    // Chiamata dal pulsante Reset
+    fun requestResetDialog() { 
+        Log.d("GameVM", "requestResetDialog - Setting gamePaused = true, gameResetRequest = true")
+        gamePaused.value = true
+        gameResetRequest.value = true 
+    }
+
+    // Chiamata per chiudere il PauseDialog
+    fun dismissPauseDialog() {
+        Log.d("GameVM", "dismissPauseDialog - Setting gamePaused = false")
+        gamePaused.value = false
+        // gameResetRequest dovrebbe essere già false, ma per sicurezza:
+        if (gameResetRequest.value && !gameWon.value) { // Non resettare se è un reset confermato o vinto
+            Log.w("GameVM", "dismissPauseDialog - gameResetRequest was true when dismissing pause. Check logic.")
+            // gameResetRequest.value = false // Opzionale: dipende dalla logica desiderata
         }
     }
 
-    fun setResetReset() {
-        if(!gameResetRequest.value) {
-            gameResetRequest.value = true
-            setResetPause()
-        } else {
-            gameResetRequest.value = false
-            setResetPause()
-        }
+    // Chiamata per annullare il ResetDialog
+    fun cancelResetDialog() {
+        Log.d("GameVM", "cancelResetDialog - Setting gamePaused = false, gameResetRequest = false")
+        gamePaused.value = false
+        gameResetRequest.value = false
     }
-
-    fun resetProceed() {
-        resetGame()
+    
+    // Chiamata dal pulsante "Reset" nel menu di gioco, per resettare la partita corrente
+    fun resetCurrentGame() { 
+        Log.d("GameVM", "resetCurrentGame - Calling resetGame() to restart current match.")
+        resetGame() 
     }
 
     fun resetPlayResetSound(resetSound: () -> Unit) {
-        resetSound()
-        _gamePlayResetSound.value = false
+        if (_gamePlayResetSound.value) {
+            resetSound()
+            _gamePlayResetSound.value = false
+        }
     }
 
     private fun checkAllCardsCoupled(): Boolean {
-        return tablePlay.cardsArray.flatten().all { it.value.coupled }
+        if (!isBoardInitialized.value) {
+            Log.w("GameVM_CheckAll", "Board not initialized. Returning false.")
+            return false
+        }
+        val currentBoard = _tablePlay
+        if (currentBoard == null) {
+            Log.e("GameVM_CheckAll", "CRITICAL: _tablePlay is NULL. Returning false.")
+            return false
+        }
+
+        for (x_idx in currentBoard.cardsArray.indices) {
+            for (y_idx in currentBoard.cardsArray[x_idx].indices) {
+                val cardState = currentBoard.cardsArray.getOrNull(x_idx)?.getOrNull(y_idx)
+                if (cardState == null) {
+                    Log.e("GameVM_CheckAll", "CRITICAL: cardState at [$x_idx][$y_idx] is null during iteration. Game state error.")
+                    return false 
+                }
+                val cardValue = cardState.value
+                if (cardValue == null) {
+                    Log.e("GameVM_CheckAll", "CRITICAL: cardValue at [$x_idx][$y_idx] is null during iteration. Game state error.")
+                    return false 
+                }
+                if (!cardValue.coupled) {
+                    return false 
+                }
+            }
+        }
+        return true 
     }
 
-    private fun getPointsResetTimeLastMove(multiplier: Float): Int {
-        val timerPoints = ((currentTime.value - timeOfLastMove) * multiplier).toInt()
-        timeOfLastMove = currentTime.value
-        return timerPoints
+    private fun calculateTimeEffectDeciPoints(timeDeltaInSeconds: Long, effectRateInteger: Int): Int {
+        if (timeDeltaInSeconds <= 0) return 0
+        val points = (100.0 / timeDeltaInSeconds.toDouble()) * effectRateInteger
+        return points.roundToInt()
     }
 
-    private fun refreshPointsWrongCouple() {_score.intValue -= (3 + getPointsResetTimeLastMove(0.4f))}
-    private fun refreshPointsRightCouple() {_score.intValue += (12 - getPointsResetTimeLastMove(0.2f))}
-    private fun refreshPointsNoCoupleSelected() {_score.intValue -= (1 + getPointsResetTimeLastMove(0.5f))}
+    private fun calculateBoardDifficultyDeciBonusPoints(): Int {
+        if (!isBoardInitialized.value) {
+            Log.w("GameVM_Score", "calculateBoardDifficultyDeciBonusPoints - Board not initialized. Returning 0 bonus.")
+            return 0
+        }
+        val currentBoard = _tablePlay
+        if (currentBoard == null) {
+            Log.e("GameVM_Score", "CRITICAL: calculateBoardDifficultyDeciBonusPoints - _tablePlay is NULL. Returning 0 bonus.")
+            return 0
+        }
+
+        val minConfigurableBoardCells = PreferencesViewModel.MIN_BOARD_WIDTH * PreferencesViewModel.MIN_BOARD_HEIGHT
+        val currentTotalCells = currentBoard.boardWidth * currentBoard.boardHeight
+
+        if (currentTotalCells <= 0) return 0
+        if (currentTotalCells <= minConfigurableBoardCells) return 0
+
+        val bonusFloat = 2.0f * (1.0f - (minConfigurableBoardCells.toFloat() / currentTotalCells.toFloat()))
+        val deciBonus = (bonusFloat * 10.0f).roundToInt()
+        
+        return max(0, deciBonus) 
+    }
+
+    private fun refreshPointsWrongCouple(timeDeltaInSeconds: Long) { 
+        val timePenaltyDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = -2)
+        _score.intValue = _score.intValue + timePenaltyDeciPoints 
+        Log.d("GameVM_Score", "refreshPointsWrongCouple - Score: ${_score.intValue}, Time Penalty: $timePenaltyDeciPoints")
+    }
+    private fun refreshPointsRightCouple(timeDeltaInSeconds: Long) { 
+        val timeBonusDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = 1)
+        val boardBonusDeciPoints = calculateBoardDifficultyDeciBonusPoints()
+        _score.intValue = _score.intValue + timeBonusDeciPoints + boardBonusDeciPoints 
+        Log.d("GameVM_Score", "refreshPointsRightCouple - Score: ${_score.intValue}, Time Bonus: $timeBonusDeciPoints, Board Bonus: $boardBonusDeciPoints")
+    }
+    private fun refreshPointsNoCoupleSelected(timeDeltaInSeconds: Long) { 
+        val timePenaltyDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = -1)
+        _score.intValue = _score.intValue + timePenaltyDeciPoints 
+        Log.d("GameVM_Score", "refreshPointsNoCoupleSelected - Score: ${_score.intValue}, Time Penalty: $timePenaltyDeciPoints")
+    }
 
     override fun onCleared() {
         super.onCleared()

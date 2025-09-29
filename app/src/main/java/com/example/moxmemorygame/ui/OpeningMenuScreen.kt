@@ -206,7 +206,7 @@ fun LastPlayedEntryView(entry: ScoreEntry) {
                     )
                 }
                 Text(
-                    text = stringResource(R.string.score_points_format, entry.score),
+                    text = stringResource(R.string.score_points_format, entry.score), // MODIFICATO: Punteggio visualizzato direttamente
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold, 
                     textAlign = TextAlign.End, 
@@ -261,7 +261,7 @@ fun RankingEntryView(rank: Int, entry: ScoreEntry, isHighlighted: Boolean) {
                 )
             }
             Text(
-                text = stringResource(R.string.score_points_format, entry.score),
+                text = stringResource(R.string.score_points_format, entry.score), // MODIFICATO: Punteggio visualizzato direttamente
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.End,
@@ -279,13 +279,15 @@ fun RankingEntryView(rank: Int, entry: ScoreEntry, isHighlighted: Boolean) {
 fun OpeningMenuScreenPreview() {
     val fakeDataStore = FakeAppSettingsDataStore()
     LaunchedEffect(Unit) {
+        // I punteggi salvati per la preview sono ora intesi come valori diretti
+        // 1234 sarà visualizzato come 1234
         fakeDataStore.saveScore("UserPreview", 1234) 
         fakeDataStore.saveScore("GiocatoreEstremo", 3200) 
-        fakeDataStore.saveScore("PlayerNumeroUno", 2500) 
+        fakeDataStore.saveScore("PlayerNumeroUno", 2505) 
         fakeDataStore.saveScore("MoxFan", 1800)     
-        fakeDataStore.saveScore("AnotherPlayer", 1500) 
+        fakeDataStore.saveScore("AnotherPlayer", 1509) 
         fakeDataStore.saveScore("YetAnother", 1000) 
-        fakeDataStore.saveScore("HighScorerLAST", 2800) 
+        fakeDataStore.saveScore("HighScorerLAST", 2802) 
     }
 
     val fakeViewModel = OpeningMenuViewModel(
@@ -300,6 +302,7 @@ fun OpeningMenuScreenPreview() {
 @Preview
 @Composable
 fun LastPlayedEntryPreview() {
+    // entry.score = 1250 visualizzerà 1250
     val entry = ScoreEntry("Preview Player", 1250, System.currentTimeMillis() - 100000000)
     MaterialTheme {
         Box(modifier=Modifier.padding(16.dp)) {
@@ -311,11 +314,13 @@ fun LastPlayedEntryPreview() {
 @Preview
 @Composable
 fun RankingEntryPreview() {
+    // entry.score = 2800 visualizzerà 2800
     val entry = ScoreEntry("Rank Preview", 2800, System.currentTimeMillis() - 200000000)
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)){
             RankingEntryView(rank = 1, entry = entry, isHighlighted = false)
-            RankingEntryView(rank = 2, entry = entry.copy(playerName = "Highlighted Player", score = 2750), isHighlighted = true)
+            // entry.score = 2753 visualizzerà 2753
+            RankingEntryView(rank = 2, entry = entry.copy(playerName = "Highlighted Player", score = 2753), isHighlighted = true)
         }
     }
 }

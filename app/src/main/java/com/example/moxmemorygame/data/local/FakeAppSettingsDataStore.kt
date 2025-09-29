@@ -4,7 +4,7 @@ import android.util.Log
 import com.example.moxmemorygame.model.ScoreEntry
 // Importa IAppSettingsDataStore dalla sua nuova posizione
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
-// Importa RealAppSettingsDataStore per accedere a DEFAULT_SELECTED_CARDS
+// Importa RealAppSettingsDataStore per accedere ai valori di default
 import com.example.moxmemorygame.data.local.RealAppSettingsDataStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +28,14 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore { // Nome classe semplifi
 
     private val _lastPlayedEntry = MutableStateFlow<ScoreEntry?>(null)
     override val lastPlayedEntry: StateFlow<ScoreEntry?> = _lastPlayedEntry.asStateFlow()
+
+    // NUOVI MEMBRI PER LE DIMENSIONI DELLA TABELLA
+    private val _selectedBoardWidth = MutableStateFlow(RealAppSettingsDataStore.DEFAULT_BOARD_WIDTH)
+    override val selectedBoardWidth: StateFlow<Int> = _selectedBoardWidth.asStateFlow()
+
+    private val _selectedBoardHeight = MutableStateFlow(RealAppSettingsDataStore.DEFAULT_BOARD_HEIGHT)
+    override val selectedBoardHeight: StateFlow<Int> = _selectedBoardHeight.asStateFlow()
+    // FINE NUOVI MEMBRI
 
     override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true) // Per i fake, assumiamo sia sempre caricato
 
@@ -57,5 +65,12 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore { // Nome classe semplifi
             .take(ScoreEntry.MAX_RANKING_ENTRIES)
         
         Log.d("FakeDataStore", "Saved score: $newEntry. New ranking: ${_topRanking.value}")
+    }
+
+    // NUOVA IMPLEMENTAZIONE FUNZIONE DI SALVATAGGIO DIMENSIONI
+    override suspend fun saveBoardDimensions(width: Int, height: Int) {
+        _selectedBoardWidth.value = width
+        _selectedBoardHeight.value = height
+        Log.d("FakeDataStore", "Saved board dimensions: width=$width, height=$height")
     }
 }

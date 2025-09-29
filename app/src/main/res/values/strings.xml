@@ -59,6 +59,9 @@
     <string name="game_background_default_error_description">Default background due to error</string>
     <string name="game_card_content_description_back">Card back</string>
     <string name="game_card_content_description_face">Game card face</string>
+    <string name="preferences_scroll_down_indicator">Scroll\nDown</string>
+    <string name="game_loading_board">Loading game board...</string>
+    <string name="game_error_board_null">Error: Board not available. Please reset.</string>
 
 
 </resources>

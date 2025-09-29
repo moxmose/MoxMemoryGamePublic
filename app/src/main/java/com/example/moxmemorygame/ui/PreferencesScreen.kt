@@ -19,16 +19,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider // NUOVO IMPORT
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -57,14 +61,11 @@ import com.example.moxmemorygame.BackgroundImg
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import kotlinx.coroutines.flow.MutableStateFlow
-// Rimuovi questi import se non usati altrove, altrimenti lasciali.
-// import com.example.moxmemorygame.model.BOARD_HEIGHT
-// import com.example.moxmemorygame.model.BOARD_WIDTH
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import kotlin.math.roundToInt // NUOVO IMPORT
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +80,6 @@ fun PreferencesScreen(
     val selectedCardsFromDataStore by preferencesViewModel.appSettingsDataStore.selectedCards.collectAsState()
     val availableCardResourceNames = preferencesViewModel.availableCardResourceNames
 
-    // Nuovi stati per le dimensioni della tabella
     val currentBoardWidth by preferencesViewModel.selectedBoardWidth.collectAsState()
     val currentBoardHeight by preferencesViewModel.selectedBoardHeight.collectAsState()
     val boardDimensionError by preferencesViewModel.boardDimensionError.collectAsState()
@@ -89,11 +89,9 @@ fun PreferencesScreen(
     var showRefinedCardDialog by remember { mutableStateOf(false) }
     var showSimpleCardDialog by remember { mutableStateOf(false) }
 
-    // Stati locali per i valori temporanei dei slider
     var tempSliderWidth by remember(currentBoardWidth) { mutableStateOf(currentBoardWidth.toFloat()) }
     var tempSliderHeight by remember(currentBoardHeight) { mutableStateOf(currentBoardHeight.toFloat()) }
 
-    // Aggiorna i valori temporanei dei slider se cambiano quelli del ViewModel (es. caricamento iniziale)
     LaunchedEffect(currentBoardWidth) {
         tempSliderWidth = currentBoardWidth.toFloat()
     }
@@ -104,6 +102,8 @@ fun PreferencesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val cardSelectionError by preferencesViewModel.cardSelectionError.collectAsState()
+    
+    val lazyListState = rememberLazyListState()
 
     LaunchedEffect(cardSelectionError) {
         cardSelectionError?.let {
@@ -117,13 +117,12 @@ fun PreferencesScreen(
         }
     }
 
-    // Snackbar per errori dimensioni tabella
     LaunchedEffect(boardDimensionError) {
         boardDimensionError?.let {
             scope.launch {
                 snackbarHostState.showSnackbar(
                     message = it,
-                    duration = androidx.compose.material3.SnackbarDuration.Long // Più lungo per errori potenzialmente complessi
+                    duration = androidx.compose.material3.SnackbarDuration.Long
                 )
                 preferencesViewModel.clearBoardDimensionError()
             }
@@ -144,7 +143,6 @@ fun PreferencesScreen(
         selectedCardsFromDataStore.count { it.startsWith("img_s_") }
     }
     
-    // Calcolo dinamico delle carte minime richieste
     val minRequiredPairs = remember(currentBoardWidth, currentBoardHeight) {
         (currentBoardWidth * currentBoardHeight) / 2
     }
@@ -155,150 +153,163 @@ fun PreferencesScreen(
             .padding(innerPadding),
     ) {
         BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds)
-        Column(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                item {
-                    Text(stringResource(R.string.preferences_screen_title), style = MaterialTheme.typography.headlineMedium)
-                }
-
-                item {
-                    OutlinedTextField(
-                        value = tempPlayerName,
-                        onValueChange = { if (it.length <= PreferencesViewModel.PLAYERNAME_MAX_LENGTH) tempPlayerName = it },
-                        label = { Text(stringResource(R.string.preferences_player_name_label, tempPlayerName.length, PreferencesViewModel.PLAYERNAME_MAX_LENGTH)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                item {
-                    Button(
-                        onClick = { preferencesViewModel.updatePlayerName(tempPlayerName) },
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.preferences_button_save_player_name), style = MaterialTheme.typography.bodyLarge)
+        Column(modifier = Modifier.fillMaxSize()) { 
+            Box(modifier = Modifier.weight(1f)) { 
+                LazyColumn(
+                    state = lazyListState, 
+                    modifier = Modifier
+                        .fillMaxSize() 
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    item {
+                        Text(stringResource(R.string.preferences_screen_title), style = MaterialTheme.typography.headlineMedium)
                     }
-                }
 
-                item {
-                    OutlinedButton(
-                        onClick = { showBackgroundDialog = true },
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.preferences_button_select_backgrounds, selectedBackgroundsFromVM.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-
-                // --- SEZIONE DIMENSIONI TABELLA ---
-                item {
-                    Text("Board Dimensions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp)) // Sostituire con stringResource
-                }
-
-                item {
-                    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                        Text("Width: ${tempSliderWidth.roundToInt()}", style = MaterialTheme.typography.bodyLarge) // Sostituire con stringResource
-                        Slider(
-                            value = tempSliderWidth,
-                            onValueChange = { tempSliderWidth = it },
-                            valueRange = PreferencesViewModel.MIN_BOARD_WIDTH.toFloat()..PreferencesViewModel.MAX_BOARD_WIDTH.toFloat(),
-                            steps = (PreferencesViewModel.MAX_BOARD_WIDTH - PreferencesViewModel.MIN_BOARD_WIDTH - 1),
-                            onValueChangeFinished = {
-                                preferencesViewModel.updateBoardDimensions(tempSliderWidth.roundToInt(), currentBoardHeight)
-                            },
+                    item {
+                        OutlinedTextField(
+                            value = tempPlayerName,
+                            onValueChange = { if (it.length <= PreferencesViewModel.PLAYERNAME_MAX_LENGTH) tempPlayerName = it },
+                            label = { Text(stringResource(R.string.preferences_player_name_label, tempPlayerName.length, PreferencesViewModel.PLAYERNAME_MAX_LENGTH)) },
+                            singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
 
-                item {
-                    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                        Text("Height: ${tempSliderHeight.roundToInt()}", style = MaterialTheme.typography.bodyLarge) // Sostituire con stringResource
-                        Slider(
-                            value = tempSliderHeight,
-                            onValueChange = { tempSliderHeight = it },
-                            valueRange = PreferencesViewModel.MIN_BOARD_HEIGHT.toFloat()..PreferencesViewModel.MAX_BOARD_HEIGHT.toFloat(),
-                            steps = (PreferencesViewModel.MAX_BOARD_HEIGHT - PreferencesViewModel.MIN_BOARD_HEIGHT - 1),
-                            onValueChangeFinished = {
-                                preferencesViewModel.updateBoardDimensions(currentBoardWidth, tempSliderHeight.roundToInt())
-                            },
+                    item {
+                        Button(
+                            onClick = { preferencesViewModel.updatePlayerName(tempPlayerName) },
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                             modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.preferences_button_save_player_name), style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+
+                    item {
+                        OutlinedButton(
+                            onClick = { showBackgroundDialog = true },
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.preferences_button_select_backgrounds, selectedBackgroundsFromVM.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+
+                    item {
+                        Text("Board Dimensions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 12.dp))
+                    }
+
+                    item {
+                        Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                            Text("Width: ${tempSliderWidth.roundToInt()}", style = MaterialTheme.typography.bodyLarge)
+                            Slider(
+                                value = tempSliderWidth,
+                                onValueChange = { tempSliderWidth = it },
+                                valueRange = PreferencesViewModel.MIN_BOARD_WIDTH.toFloat()..PreferencesViewModel.MAX_BOARD_WIDTH.toFloat(),
+                                steps = (PreferencesViewModel.MAX_BOARD_WIDTH - PreferencesViewModel.MIN_BOARD_WIDTH - 1),
+                                onValueChangeFinished = {
+                                    preferencesViewModel.updateBoardDimensions(tempSliderWidth.roundToInt(), currentBoardHeight)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    item {
+                        Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                            Text("Height: ${tempSliderHeight.roundToInt()}", style = MaterialTheme.typography.bodyLarge)
+                            Slider(
+                                value = tempSliderHeight,
+                                onValueChange = { tempSliderHeight = it },
+                                valueRange = PreferencesViewModel.MIN_BOARD_HEIGHT.toFloat()..PreferencesViewModel.MAX_BOARD_HEIGHT.toFloat(),
+                                steps = (PreferencesViewModel.MAX_BOARD_HEIGHT - PreferencesViewModel.MIN_BOARD_HEIGHT - 1),
+                                onValueChangeFinished = {
+                                    preferencesViewModel.updateBoardDimensions(currentBoardWidth, tempSliderHeight.roundToInt())
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                     item {
+                        Text(
+                            text = "Current Size: ${currentBoardWidth}x${currentBoardHeight}", 
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
-                }
-                 item {
-                    Text(
-                        text = "Current Size: ${currentBoardWidth}x${currentBoardHeight}", // Sostituire con stringResource
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
 
-                boardDimensionError?.let {
+                    boardDimensionError?.let {
+                        item {
+                            Text(
+                                text = it,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                            )
+                        }
+                    }
+
+                    item {
+                        Text(stringResource(R.string.preferences_card_selection_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
+                    }
+
+                    item {
+                        OutlinedButton(
+                            onClick = { showRefinedCardDialog = true },
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.preferences_button_select_refined_cards, selectedRefinedCount, refinedCardResourceNames.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+
+                    item {
+                        OutlinedButton(
+                            onClick = { showSimpleCardDialog = true },
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Text(stringResource(R.string.preferences_button_select_simple_cards, selectedSimpleCount, simpleCardResourceNames.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
                     item {
                         Text(
-                            text = it,
-                            color = MaterialTheme.colorScheme.error,
+                            stringResource(R.string.preferences_min_cards_required_info, minRequiredPairs, selectedCardsFromDataStore.size),
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                         )
                     }
-                }
-                // --- FINE SEZIONE DIMENSIONI TABELLA ---
 
-                item {
-                    Text(stringResource(R.string.preferences_card_selection_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
-                }
-
-                item {
-                    OutlinedButton(
-                        onClick = { showRefinedCardDialog = true },
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.preferences_button_select_refined_cards, selectedRefinedCount, refinedCardResourceNames.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { preferencesViewModel.onBackToMainMenuClicked() },
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.preferences_button_back_to_main_menu), style = MaterialTheme.typography.bodyLarge)
+                        }
                     }
-                }
+                } 
 
-                item {
-                    OutlinedButton(
-                        onClick = { showSimpleCardDialog = true },
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp) // Aggiunto padding qui se necessario dopo i buttons
-                    ) {
-                        Text(stringResource(R.string.preferences_button_select_simple_cards, selectedSimpleCount, simpleCardResourceNames.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-                item {
-                    Text(
-                        // Aggiornato per usare minRequiredPairs dinamico
-                        stringResource(R.string.preferences_min_cards_required_info, minRequiredPairs, selectedCardsFromDataStore.size),
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                if (lazyListState.canScrollForward) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.preferences_scroll_down_indicator),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(bottom = 16.dp, end = 16.dp)
+                            .size(48.dp), // DIMENSIONI AUMENTATE
+                        tint = MaterialTheme.colorScheme.onSurface // ALPHA RIMOSSO PER OPACITÀ COMPLETA
                     )
                 }
+            } 
 
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { preferencesViewModel.onBackToMainMenuClicked() },
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.preferences_button_back_to_main_menu), style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-            }
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier.align(Alignment.CenterHorizontally)

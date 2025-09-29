@@ -3,8 +3,8 @@ package com.example.moxmemorygame.model
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 
-// dimension of the play base
-const val BOARD_WIDTH = 4
+// dimension of the play base (these might be used as defaults or max/min elsewhere)
+const val BOARD_WIDTH = 4 
 const val BOARD_HEIGHT = 5
 
 /** GameCard is the base of a card identity
@@ -16,12 +16,16 @@ data class GameCard(
 )
 
 /** GameBoard is the base of array of cards
- *  (Previously GameCardArray)
+ *  Now accepts dynamic width and height.
  */
 class GameBoard(
-    val cardsArray: Array<Array<MutableState<GameCard>>> = Array(BOARD_WIDTH) {
-        Array(BOARD_HEIGHT) {
-            mutableStateOf(GameCard(id = it, turned = false, coupled = false))
+    val boardWidth: Int, // Parametro per la larghezza
+    val boardHeight: Int // Parametro per l'altezza
+) {
+    val cardsArray: Array<Array<MutableState<GameCard>>> = Array(boardWidth) {
+        Array(boardHeight) {
+            // L'ID iniziale qui è un placeholder, verrà sovrascritto in GameViewModel
+            mutableStateOf(GameCard(id = -1, turned = false, coupled = false)) 
         }
     }
-)
+}

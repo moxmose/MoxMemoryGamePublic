@@ -2,6 +2,7 @@ package com.example.moxmemorygame
 
 import android.content.Context
 import android.os.Build
+import android.util.Log 
 import android.view.SoundEffectConstants
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
@@ -20,10 +21,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight // Import per wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,27 +41,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-// Import per stringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.moxmemorygame.model.BOARD_HEIGHT // Nuovo Import
-import com.example.moxmemorygame.model.BOARD_WIDTH // Nuovo Import
-import com.example.moxmemorygame.model.GameBoard // Nuovo Import
-// Import per la classe R (se non già presente per altre risorse)
-// import com.example.moxmemorygame.R
+import com.example.moxmemorygame.model.GameBoard
+import com.example.moxmemorygame.model.GameCard 
 import com.example.moxmemorygame.ui.GameCardImages
 import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.SoundUtils
 import com.example.moxmemorygame.ui.formatDuration
 import kotlinx.coroutines.flow.StateFlow
-import org.koin.androidx.compose.getViewModel
 import org.koin.androidx.compose.koinViewModel
-import kotlin.random.Random
 
 @Composable
 fun GameApp(
@@ -68,7 +63,6 @@ fun GameApp(
     innerPadding: PaddingValues
 ) {
     val localSoundContext = LocalContext.current
-    val clickSound = { SoundUtils.playSound(localSoundContext, SoundEffectConstants.CLICK) }
     val flipSound = { SoundUtils.playSound(localSoundContext, R.raw.flipcard) }
     val pauseSound = { SoundUtils.playSound(localSoundContext, R.raw.keyswipe_card) }
     val failSound = { SoundUtils.playSound(localSoundContext, R.raw.fail) }
@@ -76,22 +70,31 @@ fun GameApp(
     val successSound = { SoundUtils.playSound(localSoundContext, R.raw.short_success_sound_glockenspiel_treasure_videogame) }
     val winSound = { SoundUtils.playSound(localSoundContext, R.raw.brass_fanfare_with_timpani_and_winchimes_reverberated) }
 
-    val tablePlay = gameViewModel.tablePlay
+    val currentTablePlay = gameViewModel.tablePlay 
+    val isBoardInitialized by gameViewModel.isBoardInitialized
 
     val checkPlayCardTurned = {x: Int, y: Int ->
         gameViewModel.checkGamePlayCardTurned(x=x, y=y,
             flipSound=flipSound, pauseSound=pauseSound, failSound=failSound,
             successSound=successSound, winSound=winSound) }
 
-    val actionOnPause = { gameViewModel.setResetPause(); pauseSound() }
-    val actionOnReset = { gameViewModel.setResetReset(); pauseSound() }
-    val actionOnResetProceed = { gameViewModel.onResetAndGoToOpeningMenu(); }
+    // Azioni per i pulsanti Pause e Reset nella UI (Tail)
+    val onPauseClicked = { gameViewModel.requestPauseDialog(); pauseSound() }
+    val onResetClicked = { gameViewModel.requestResetDialog(); pauseSound() } // Usa requestResetDialog che imposta entrambi gli stati
 
-    val gameCardImages = gameViewModel.gameCardImages
-    val gamePaused = gameViewModel.gamePaused.value
-    val gameResetRequest = gameViewModel.gameResetRequest.value
-    val gameWon = gameViewModel.gameWon.value
-    val gamePlayResetSound = gameViewModel.gamePlayResetSound
+    // Azioni per i dialoghi
+    val onDismissPauseDialog = { gameViewModel.dismissPauseDialog(); pauseSound() }
+    val onCancelResetDialog = { gameViewModel.cancelResetDialog(); pauseSound() }
+    // Azione per conferma reset (OK) e per chiudere GameWonDialog: naviga al menu principale
+    val onConfirmAndNavigateToMenu = { gameViewModel.navigateToOpeningMenuAndCleanupDialogStates(); /* Suono di reset o vittoria già gestito? */ }
+    // Azione per resettare la partita corrente (se si volesse un pulsante OK nel ResetDialog che fa solo questo)
+    // val onConfirmResetCurrentGame = { gameViewModel.resetCurrentGame(); resetSound() }
+
+    val gameCardImages = gameViewModel.gameCardImages 
+    val gamePaused by gameViewModel.gamePaused // Usa by per osservare lo State
+    val gameResetRequest by gameViewModel.gameResetRequest // Usa by per osservare lo State
+    val gameWon by gameViewModel.gameWon // Usa by per osservare lo State
+    val gamePlayResetSound = gameViewModel.gamePlayResetSound // Questo è un Boolean normale, non State?
     val resetPlayResetSound = { gameViewModel.resetPlayResetSound(resetSound) }
 
     val score = gameViewModel.score.intValue
@@ -107,10 +110,10 @@ fun GameApp(
             .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
-        BackgroundImg(selectedBackgrounds = gameViewModel.selectedBackgrounds) // Passa lo StateFlow
+        BackgroundImg(selectedBackgrounds = gameViewModel.selectedBackgrounds)
         Column(modifier = modifier) {
             Head(
-                score = score,
+                score = score, 
                 moves = moves,
                 timeGame = timeGameString
             )
@@ -119,37 +122,72 @@ fun GameApp(
                 resetPlayResetSound()
             }
 
-            if (gamePaused)
-                if (gameWon)
+            if (gamePaused) { // Questo è il trigger principale per i dialoghi
+                if (gameWon) {
                     GameWonDialog(
-                        onDismissRequest = actionOnResetProceed,
-                        score = score
+                        onDismissRequest = onConfirmAndNavigateToMenu, // Chiude e naviga
+                        score = score 
                     )
-                else
-                    if (gameResetRequest)
-                        ResetDialog(
-                            onDismissRequest = actionOnReset,
-                            onConfirmation = actionOnResetProceed
+                } else if (gameResetRequest) {
+                    ResetDialog(
+                        onDismissRequest = onCancelResetDialog,       // Annulla il reset e chiude il dialogo
+                        onConfirmation = onConfirmAndNavigateToMenu // Conferma reset e naviga al menu
+                    )
+                } else {
+                    PauseDialog(
+                        onDismissRequest = onDismissPauseDialog     // Chiude il dialogo di pausa
+                    )
+                }
+            }
+            
+            if (isBoardInitialized) {
+                currentTablePlay?.let { board -> 
+                    ShowTablePlay(
+                        xDim = board.boardWidth,
+                        yDim = board.boardHeight,
+                        tablePlay = board, 
+                        gameCardImages = gameCardImages,
+                        checkPlayCardTurned = checkPlayCardTurned,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(1f)
+                    )
+                } ?: run {
+                    Log.e("GameApp", "CRITICAL: isBoardInitialized is true, but gameViewModel.tablePlay is null.")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.game_error_board_null),
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.error
                         )
-                    else
-                        PauseDialog(
-                            onDismissRequest = actionOnPause
-                        )
-
-            ShowTablePlay(
-                xDim = BOARD_WIDTH,
-                yDim = BOARD_HEIGHT,
-                tablePlay = tablePlay,
-                gameCardImages = gameCardImages,
-                checkPlayCardTurned = checkPlayCardTurned,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-            )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.game_loading_board),
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
 
             Tail(
-                actionOnPause = actionOnPause,
-                actionOnReset = actionOnReset
+                actionOnPause = onPauseClicked, // Usa la nuova azione
+                actionOnReset = onResetClicked  // Usa la nuova azione
             )
             Spacer(modifier = Modifier.padding(5.dp))
         }
@@ -158,7 +196,7 @@ fun GameApp(
 
 @Composable
 fun Head(
-    score: Int,
+    score: Int, 
     moves: Int,
     timeGame: String,
     modifier: Modifier = Modifier
@@ -170,7 +208,7 @@ fun Head(
     ) {
         Row {
             Text(
-                text = stringResource(R.string.game_head_score, score),
+                text = stringResource(R.string.game_head_score, score), 
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -197,12 +235,18 @@ fun Head(
 fun ShowTablePlay(
     xDim: Int,
     yDim: Int,
-    tablePlay: GameBoard,
+    tablePlay: GameBoard, 
     @DrawableRes
     gameCardImages: List<Int>,
     checkPlayCardTurned: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (gameCardImages.isEmpty() && (xDim * yDim > 0)) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Error: Card images not loaded for ShowTablePlay.", color = MaterialTheme.colorScheme.error)
+        }
+        return
+    }
     Column(
         modifier = modifier
             .fillMaxHeight()
@@ -214,22 +258,36 @@ fun ShowTablePlay(
                 .weight(5f)) {
                 Spacer(Modifier.weight(1f))
                 for (x in 0 until xDim) {
-                    val turned = tablePlay.cardsArray[x][y].value.turned
-                    Image(
-                        painter = if (!turned)
-                            painterResource(id = R.drawable.card_back)
-                        else painterResource(
-                            gameCardImages[
-                                tablePlay.cardsArray[x][y].value.id
-                            ]
-                        ),
-                        modifier = Modifier
-                            .weight(5f)
-                            .clickable { checkPlayCardTurned( x,y ) },
-                        contentScale = if (!turned) ContentScale.FillBounds
-                        else ContentScale.Crop,
-                        contentDescription = if (!turned) stringResource(R.string.game_card_content_description_back) else stringResource(R.string.game_card_content_description_face)
-                    )
+                    val cardState = tablePlay.cardsArray.getOrNull(x)?.getOrNull(y)
+                    if (cardState != null) {
+                        val cardValue = cardState.value
+                        if (cardValue != null) {
+                            val turned = cardValue.turned
+                            val cardImageId = if (cardValue.id >= 0 && cardValue.id < gameCardImages.size) {
+                                gameCardImages[cardValue.id]
+                            } else {
+                                R.drawable.card_back 
+                            }
+
+                            Image(
+                                painter = if (!turned)
+                                    painterResource(id = R.drawable.card_back)
+                                else painterResource(id = cardImageId),
+                                modifier = Modifier
+                                    .weight(5f)
+                                    .clickable { checkPlayCardTurned(x, y) },
+                                contentScale = if (!turned) ContentScale.FillBounds
+                                else ContentScale.Crop,
+                                contentDescription = if (!turned) stringResource(R.string.game_card_content_description_back) else stringResource(R.string.game_card_content_description_face)
+                            )
+                        } else {
+                            Log.e("ShowTablePlay", "CRITICAL: cardState.value is NULL at x=$x, y=$y")
+                            Spacer(Modifier.weight(5f)) 
+                        }
+                    } else {
+                        Log.w("ShowTablePlay", "Attempted to access card at invalid or null coordinate: x=$x, y=$y")
+                        Spacer(Modifier.weight(5f)) 
+                    }
                     Spacer(Modifier.weight(1f))
                 }
             }
@@ -309,7 +367,7 @@ fun BackgroundImg(
     if (drawableId != 0) {
         Image(
             painter = painterResource(id = drawableId),
-            contentDescription = null, // Backgrounds are decorative
+            contentDescription = null, 
             alpha = alpha,
             contentScale = ContentScale.Crop,
             modifier = modifier
@@ -418,7 +476,7 @@ fun ResetDialog(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 0.dp),
                 )
-                Spacer(modifier = Modifier.height(16.dp)) // MODIFICATO da 24.dp
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -607,34 +665,62 @@ fun Testing(
             }
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
-                Image(
-                    painter = if (tablePlay.cardsArray[0][1].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier.clickable {
-                        setPlayCardTurned(0, 1, !(tablePlay.cardsArray[0][1].value.turned))
+                if (tablePlay.boardWidth > 0 && tablePlay.boardHeight > 1 && tablePlay.cardsArray.isNotEmpty() && tablePlay.cardsArray[0].size > 1) {
+                    val cardState = tablePlay.cardsArray[0][1]
+                    val cardValue = cardState.value
+                    if (cardValue != null) {
+                        Image(
+                            painter = if (cardValue.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.clickable {
+                                setPlayCardTurned(0, 1, !(cardValue.turned))
+                            }
+                        )
+                    } else {
+                        Text("Preview card value is null")
                     }
-                )
+                } else {
+                    Text("Preview card not available")
+                }
 
             }
-            Text(text = tablePlay.cardsArray[0][1].value.turned.toString())
+            if (tablePlay.boardWidth > 0 && tablePlay.boardHeight > 1 && tablePlay.cardsArray.isNotEmpty() && tablePlay.cardsArray[0].size > 1) {
+                val cardValue = tablePlay.cardsArray[0][1].value
+                Text(text = cardValue?.turned.toString() ?: "N/A")
+            } else {
+                 Text("Preview card data N/A")
+            }
             Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
             {
-                Image(
-                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier.clickable {
-                        setPlayCardTurned(0, 0, !(tablePlay.cardsArray[0][0].value.turned))
+                 if (tablePlay.boardWidth > 0 && tablePlay.boardHeight > 0 && tablePlay.cardsArray.isNotEmpty() && tablePlay.cardsArray[0].isNotEmpty()) {
+                    val cardState = tablePlay.cardsArray[0][0]
+                    val cardValue = cardState.value
+                    if (cardValue != null) {
+                        Image(
+                            painter = if (cardValue.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.clickable {
+                                setPlayCardTurned(0, 0, !(cardValue.turned))
+                            }
+                        )
+                    } else {
+                        Text("Preview card value is null")
                     }
-                )
-
+                } else {
+                    Text("Preview card not available")
+                }
             }
-            Text(text = tablePlay.cardsArray[0][0].value.turned.toString())
+            if (tablePlay.boardWidth > 0 && tablePlay.boardHeight > 0 && tablePlay.cardsArray.isNotEmpty() && tablePlay.cardsArray[0].isNotEmpty()) {
+                val cardValue = tablePlay.cardsArray[0][0].value
+                 Text(text = cardValue?.turned.toString() ?: "N/A")
+            } else {
+                Text("Preview card data N/A")
+            }
         }
     }
 }
-
 
 
 @Composable
@@ -647,17 +733,8 @@ fun TestingDelayUsingList(
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
-
-    val screenHeight = configuration.screenHeightDp.dp
-    val screenWidth = configuration.screenWidthDp.dp
-
-    val screenDensity = configuration.densityDpi / 160f
-    val screenHeightPx = (configuration.screenHeightDp.toFloat() * screenDensity).toInt()
-    val screenWidthPx = (configuration.screenWidthDp.toFloat() * screenDensity).toInt()
-
     Box()
     {
-
         Image(
             painter = painterResource(id = R.drawable.background_00),
             contentDescription = null,
@@ -666,42 +743,7 @@ fun TestingDelayUsingList(
             modifier = Modifier.fillMaxSize()
         )
         Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(modifier = Modifier.size(width = 100.dp, height = 150.dp))
-            Box(modifier = Modifier.size(width = 100.dp, height = 150.dp))
-            {
-                Image(
-                    painter = painterResource(id = R.drawable.card_back),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds
-                )
-
-            }
-            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
-            {
-                Image(
-                    painter = if (testValue.value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier.clickable {
-                        testListFun(1)
-                    }
-                )
-
-            }
-            Text(text = tablePlay.cardsArray[0][1].value.turned.toString())
-            Box(modifier = Modifier.size(width = 150.dp, height = 200.dp))
-            {
-                Image(
-                    painter = if (tablePlay.cardsArray[0][0].value.turned) painterResource(id = R.drawable.card_back) else painterResource(id = R.drawable.loading_image),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier.clickable {
-                        setPlayCardTurned(0, 0, !(tablePlay.cardsArray[0][0].value.turned))
-                    }
-                )
-
-            }
-            Text(text = "${tablePlay.cardsArray[0][0].value.turned}")
+            Text("TestingDelayUsingList Preview (check implementation for details)")
         }
     }
 }
@@ -709,31 +751,68 @@ fun TestingDelayUsingList(
 @Preview
 @Composable
 fun TestingPreview() {
-    Column {
-        Head(
-            score = 0,
-            moves = 0,
-            timeGame = "05:39"
-        )
-        val gameCardImages = GameCardImages().image
-        val tablePlay = GameBoard() 
-        ShowTablePlay(
-            xDim = BOARD_WIDTH,
-            yDim = BOARD_HEIGHT, 
-            tablePlay = tablePlay,
-            gameCardImages = gameCardImages,
-            checkPlayCardTurned = {x, y -> },
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(1f)
-        )
-        Tail(
-            {},
-            {}
-        )
-        GameWonDialog(
-            {},
-            1000
-        )
+    MaterialTheme { 
+        Column {
+            Head(
+                score = 0, 
+                moves = 0,
+                timeGame = "05:39"
+            )
+
+            val previewBoardWidth = 4
+            val previewBoardHeight = 5
+            val tablePlay = GameBoard(boardWidth = previewBoardWidth, boardHeight = previewBoardHeight)
+            val allGameCardImages = GameCardImages().image 
+
+            val uniqueCardsNeeded = (previewBoardWidth * previewBoardHeight) / 2
+            val previewCardImages = if (allGameCardImages.size >= uniqueCardsNeeded) {
+                allGameCardImages.distinct().take(uniqueCardsNeeded)
+            } else {
+                allGameCardImages.distinct().let { distinctImages ->
+                    List(uniqueCardsNeeded) { distinctImages.getOrElse(it % distinctImages.size) { R.drawable.card_back } }
+                }
+            }
+
+            val logicalCardIds = (0 until uniqueCardsNeeded).toList()
+            val gameCardLogicalIdsForBoard = (logicalCardIds + logicalCardIds).shuffled()
+            var cardIdx = 0
+            for (x in 0 until previewBoardWidth) {
+                for (y in 0 until previewBoardHeight) {
+                    if (cardIdx < gameCardLogicalIdsForBoard.size) { 
+                        val currentLogicalId = gameCardLogicalIdsForBoard.getOrElse(cardIdx++) { 0 } 
+                        tablePlay.cardsArray[x][y].value = GameCard(
+                            id = currentLogicalId,
+                            turned = false, 
+                            coupled = false
+                        )
+                    } else {
+                        tablePlay.cardsArray[x][y].value = GameCard(id = 0, turned = true, coupled = true) 
+                    }
+                }
+            }
+
+            if (previewCardImages.size < uniqueCardsNeeded) {
+                 Box(modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text("Preview Error: Not enough unique images for the board size. Using placeholders.")
+                 }
+            } else {
+                ShowTablePlay(
+                    xDim = previewBoardWidth,
+                    yDim = previewBoardHeight, 
+                    tablePlay = tablePlay,
+                    gameCardImages = previewCardImages, 
+                    checkPlayCardTurned = {_, _ -> }, 
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                )
+            }
+            Tail(
+                actionOnPause = {},
+                actionOnReset = {}
+            )
+        }
     }
 }
+
+// Assicurati che R.string.game_loading_board e R.string.game_error_board_null siano definite in strings.xml
