@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.compose.rememberNavController
-import com.example.moxmemorygame.BackgroundImg
+import com.example.moxmemorygame.ui.composables.BackgroundImg
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import kotlinx.coroutines.flow.MutableStateFlow

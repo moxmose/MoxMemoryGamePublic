@@ -33,7 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
-import com.example.moxmemorygame.BackgroundImg
+import com.example.moxmemorygame.ui.composables.BackgroundImg
 // Import per la classe R
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
