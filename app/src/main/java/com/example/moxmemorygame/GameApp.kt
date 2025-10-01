@@ -1,11 +1,11 @@
 package com.example.moxmemorygame
 
-import android.content.Context
-import android.os.Build
+//import android.content.Context
+//import android.os.Build
 import android.util.Log 
-import android.view.SoundEffectConstants
+//import android.view.SoundEffectConstants
 import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
+//import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,27 +18,27 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+//import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+//import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+//import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+//import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateList
+//import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
+//import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,9 +58,9 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun GameApp(
-    gameViewModel: GameViewModel = koinViewModel(),
-    modifier: Modifier = Modifier,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues, 
+    modifier: Modifier = Modifier, 
+    gameViewModel: GameViewModel = koinViewModel()
 ) {
     val localSoundContext = LocalContext.current
     val flipSound = { SoundUtils.playSound(localSoundContext, R.raw.flipcard) }
@@ -80,21 +80,18 @@ fun GameApp(
 
     // Azioni per i pulsanti Pause e Reset nella UI (Tail)
     val onPauseClicked = { gameViewModel.requestPauseDialog(); pauseSound() }
-    val onResetClicked = { gameViewModel.requestResetDialog(); pauseSound() } // Usa requestResetDialog che imposta entrambi gli stati
+    val onResetClicked = { gameViewModel.requestResetDialog(); pauseSound() } 
 
     // Azioni per i dialoghi
     val onDismissPauseDialog = { gameViewModel.dismissPauseDialog(); pauseSound() }
     val onCancelResetDialog = { gameViewModel.cancelResetDialog(); pauseSound() }
-    // Azione per conferma reset (OK) e per chiudere GameWonDialog: naviga al menu principale
-    val onConfirmAndNavigateToMenu = { gameViewModel.navigateToOpeningMenuAndCleanupDialogStates(); /* Suono di reset o vittoria già gestito? */ }
-    // Azione per resettare la partita corrente (se si volesse un pulsante OK nel ResetDialog che fa solo questo)
-    // val onConfirmResetCurrentGame = { gameViewModel.resetCurrentGame(); resetSound() }
+    val onConfirmAndNavigateToMenu = { gameViewModel.navigateToOpeningMenuAndCleanupDialogStates(); }
 
     val gameCardImages = gameViewModel.gameCardImages 
-    val gamePaused by gameViewModel.gamePaused // Usa by per osservare lo State
-    val gameResetRequest by gameViewModel.gameResetRequest // Usa by per osservare lo State
-    val gameWon by gameViewModel.gameWon // Usa by per osservare lo State
-    val gamePlayResetSound = gameViewModel.gamePlayResetSound // Questo è un Boolean normale, non State?
+    val gamePaused by gameViewModel.gamePaused 
+    val gameResetRequest by gameViewModel.gameResetRequest 
+    val gameWon by gameViewModel.gameWon 
+    val gamePlayResetSound = gameViewModel.gamePlayResetSound 
     val resetPlayResetSound = { gameViewModel.resetPlayResetSound(resetSound) }
 
     val score = gameViewModel.score.intValue
@@ -102,16 +99,17 @@ fun GameApp(
     val timeGame by gameViewModel.currentTime.collectAsState()
     val timeGameString = timeGame.formatDuration()
 
-    val selectedBackgrounds by gameViewModel.selectedBackgrounds.collectAsState()
-
     Box(
-        modifier = Modifier
+        modifier = Modifier 
             .fillMaxSize()
             .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
-        BackgroundImg(selectedBackgrounds = gameViewModel.selectedBackgrounds)
-        Column(modifier = modifier) {
+        BackgroundImg(
+            selectedBackgrounds = gameViewModel.selectedBackgrounds, 
+            modifier = Modifier.fillMaxSize() 
+        )
+        Column(modifier = modifier) { 
             Head(
                 score = score, 
                 moves = moves,
@@ -122,20 +120,20 @@ fun GameApp(
                 resetPlayResetSound()
             }
 
-            if (gamePaused) { // Questo è il trigger principale per i dialoghi
+            if (gamePaused) { 
                 if (gameWon) {
                     GameWonDialog(
-                        onDismissRequest = onConfirmAndNavigateToMenu, // Chiude e naviga
+                        onDismissRequest = onConfirmAndNavigateToMenu, 
                         score = score 
                     )
                 } else if (gameResetRequest) {
                     ResetDialog(
-                        onDismissRequest = onCancelResetDialog,       // Annulla il reset e chiude il dialogo
-                        onConfirmation = onConfirmAndNavigateToMenu // Conferma reset e naviga al menu
+                        onDismissRequest = onCancelResetDialog,       
+                        onConfirmation = onConfirmAndNavigateToMenu 
                     )
                 } else {
                     PauseDialog(
-                        onDismissRequest = onDismissPauseDialog     // Chiude il dialogo di pausa
+                        onDismissRequest = onDismissPauseDialog     
                     )
                 }
             }
@@ -186,8 +184,8 @@ fun GameApp(
             }
 
             Tail(
-                actionOnPause = onPauseClicked, // Usa la nuova azione
-                actionOnReset = onResetClicked  // Usa la nuova azione
+                actionOnPause = onPauseClicked, 
+                actionOnReset = onResetClicked  
             )
             Spacer(modifier = Modifier.padding(5.dp))
         }
@@ -338,7 +336,7 @@ fun Tail(
 @Composable
 fun BackgroundImg(
     selectedBackgrounds: StateFlow<Set<String>>,
-    modifier: Modifier = Modifier.fillMaxSize(),
+    modifier: Modifier = Modifier, 
     alpha: Float = 0.5f
 ) {
     val context = LocalContext.current
@@ -359,7 +357,7 @@ fun BackgroundImg(
                 "drawable",
                 context.packageName
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) { 
             R.drawable.background_00
         }
     }
@@ -383,6 +381,42 @@ fun BackgroundImg(
     }
 }
 
+@Composable
+fun PauseDialogContent(onDismissRequest: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight() // MODIFICATO: Rimosso height(), usato wrapContentHeight()
+            .padding(16.dp) 
+            .clickable { onDismissRequest() },
+        shape = RoundedCornerShape(
+            topStart = 16.dp,
+            topEnd = 1.dp,
+            bottomStart = 1.dp,
+            bottomEnd = 16.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(), // MODIFICATO
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.card_pause),
+                contentDescription = stringResource(R.string.game_dialog_pause_image_description),
+                contentScale = ContentScale.FillWidth, // MODIFICATO
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.game_dialog_pause_exit_prompt),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(16.dp) // Padding uniforme per il testo
+            )
+        }
+    }
+}
 
 @Composable
 fun PauseDialog(
@@ -395,36 +429,81 @@ fun PauseDialog(
             dismissOnClickOutside = false
         )
     ) {
-        Card(
+        PauseDialogContent(onDismissRequest = onDismissRequest)
+    }
+}
+
+@Composable
+fun ResetDialogContent(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(16.dp), // Margine esterno della Card
+        shape = RoundedCornerShape(
+            topStart = 1.dp,
+            topEnd = 16.dp,
+            bottomStart = 16.dp,
+            bottomEnd = 1.dp
+        )
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(375.dp)
-                .padding(16.dp)
-                .clickable { onDismissRequest() }
-            ,
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 1.dp,
-                bottomStart = 1.dp,
-                bottomEnd = 16.dp
-            )
+                .wrapContentHeight(), // La colonna riempie la Card, nessun padding generale qui
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
+            Image(
+                painter = painterResource(R.drawable.card_reset),
+                contentDescription = stringResource(R.string.game_dialog_reset_image_description),
+                contentScale = ContentScale.FillWidth, // MODIFICATO
+                modifier = Modifier.fillMaxWidth() // Immagine a larghezza piena
+            )
+            Text(
+                text = stringResource(R.string.game_dialog_reset_title),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
+            )
+            Text(
+                text = stringResource(R.string.game_dialog_reset_confirmation_prompt),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
                 modifier = Modifier
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp), // Allineato a GameWonDialog
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Image(
-                    painter = painterResource(R.drawable.card_pause),
-                    contentDescription = stringResource(R.string.game_dialog_pause_image_description),
-                    contentScale = ContentScale.Fit,
-                )
-                Text(
-                    text = stringResource(R.string.game_dialog_pause_exit_prompt),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp),
-                )
+                Button(
+                    onClick = { onDismissRequest() },
+                    shape = RoundedCornerShape(
+                        topStart = 1.dp,
+                        topEnd = 16.dp,
+                        bottomStart = 16.dp,
+                        bottomEnd = 1.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.button_cancel), style = MaterialTheme.typography.bodyLarge)
+                }
+                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                Button(
+                    onClick = { onConfirmation() },
+                    shape = RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 1.dp,
+                        bottomStart = 1.dp,
+                        bottomEnd = 16.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.button_ok), style = MaterialTheme.typography.bodyLarge)
+                }
             }
         }
     }
@@ -442,71 +521,74 @@ fun ResetDialog(
             dismissOnClickOutside = false
         )
     ) {
-        Card(
+        ResetDialogContent(onDismissRequest = onDismissRequest, onConfirmation = onConfirmation)
+    }
+}
+
+@Composable
+fun GameWonDialogContent(
+    onDismissRequest: () -> Unit,
+    score: Int
+) {
+    val subtitleResId = if (score > 0) R.string.game_dialog_won_subtitle else R.string.game_dialog_finished_subtitle
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(16.dp), // Padding esterno della Card
+        shape = RoundedCornerShape(
+            topStart = 16.dp,
+            topEnd = 1.dp,
+            bottomStart = 1.dp,
+            bottomEnd = 16.dp
+        )
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(16.dp), 
-            shape = RoundedCornerShape(
-                topStart = 1.dp,
-                topEnd = 16.dp,
-                bottomStart = 16.dp,
-                bottomEnd = 1.dp
-            )
+                .wrapContentHeight(), // Rimosso padding generale da qui
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
+            Image(
+                painter = painterResource(R.drawable.card_win),
+                contentDescription = stringResource(R.string.game_dialog_won_title),
+                contentScale = ContentScale.FillWidth, // MODIFICATO 
+                modifier = Modifier.fillMaxWidth() // L'immagine riempie la larghezza della Card
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.game_dialog_won_title),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp) // Padding laterale per il testo
+            )
+            Text(
+                text = stringResource(subtitleResId),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp) // Padding per il testo
+            )
+            Text(
+                text = stringResource(R.string.game_dialog_won_score_info, score),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp) // Padding per il testo
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = { onDismissRequest() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp), // Padding per il pulsante
+                shape = RoundedCornerShape(
+                    topStart = 1.dp,
+                    topEnd = 16.dp,
+                    bottomStart = 16.dp,
+                    bottomEnd = 1.dp
+                )
             ) {
-                Image(
-                    painter = painterResource(R.drawable.card_reset),
-                    contentDescription = stringResource(R.string.game_dialog_reset_image_description),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = stringResource(R.string.game_dialog_reset_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-                Text(
-                    text = stringResource(R.string.game_dialog_reset_confirmation_prompt),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 0.dp),
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp, start = 8.dp, end = 8.dp), 
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Button(
-                        onClick = { onDismissRequest() },
-                        shape = RoundedCornerShape(
-                            topStart = 1.dp,
-                            topEnd = 16.dp,
-                            bottomStart = 16.dp,
-                            bottomEnd = 1.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.button_cancel), style = MaterialTheme.typography.bodyLarge)
-                    }
-                    Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                    Button(
-                        onClick = { onConfirmation() },
-                        shape = RoundedCornerShape(
-                            topStart = 16.dp,
-                            topEnd = 1.dp,
-                            bottomStart = 1.dp,
-                            bottomEnd = 16.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.button_ok), style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
+                Text(stringResource(R.string.game_dialog_won_button_main_menu), style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
@@ -524,64 +606,7 @@ fun GameWonDialog(
             dismissOnClickOutside = false
         )
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(420.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 1.dp,
-                bottomStart = 1.dp,
-                bottomEnd = 16.dp
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.card_win),
-                    contentDescription = stringResource(R.string.game_dialog_won_title),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.height(150.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.game_dialog_won_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = stringResource(R.string.game_dialog_won_subtitle),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Text(
-                    text = stringResource(R.string.game_dialog_won_score_info, score),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = { onDismissRequest() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(
-                        topStart = 1.dp,
-                        topEnd = 16.dp,
-                        bottomStart = 16.dp,
-                        bottomEnd = 1.dp
-                    )
-                ) {
-                    Text(stringResource(R.string.game_dialog_won_button_main_menu), style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-        }
+        GameWonDialogContent(onDismissRequest = onDismissRequest, score = score)
     }
 }
 
@@ -606,7 +631,13 @@ fun TailPreview() {
 @Composable
 fun PauseDialogPreview() {
     MaterialTheme {
-        PauseDialog (onDismissRequest = {})
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            PauseDialogContent(onDismissRequest = {})
+        }
     }
 }
 
@@ -614,7 +645,13 @@ fun PauseDialogPreview() {
 @Composable
 fun ResetDialogPreview() {
     MaterialTheme {
-        ResetDialog (onDismissRequest = {}, onConfirmation = {})
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            ResetDialogContent(onDismissRequest = {}, onConfirmation = {})
+        }
     }
 }
 
@@ -622,10 +659,31 @@ fun ResetDialogPreview() {
 @Composable
 fun GameWonDialogPreview() {
     MaterialTheme {
-        GameWonDialog(onDismissRequest = {}, score = 1500)
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            GameWonDialogContent(onDismissRequest = {}, score = 1500)
+        }
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun GameFinishedDialogPreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            GameWonDialogContent(onDismissRequest = {}, score = 0)
+        }
+    }
+}
+
+/*
 @RequiresApi(Build.VERSION_CODES.HONEYCOMB_MR2)
 @Composable
 fun Testing(
@@ -721,8 +779,9 @@ fun Testing(
         }
     }
 }
+*/
 
-
+/*
 @Composable
 fun TestingDelayUsingList(
     tablePlay: GameBoard, 
@@ -747,6 +806,7 @@ fun TestingDelayUsingList(
         }
     }
 }
+*/
 
 @Preview
 @Composable
@@ -768,7 +828,10 @@ fun TestingPreview() {
             val previewCardImages = if (allGameCardImages.size >= uniqueCardsNeeded) {
                 allGameCardImages.distinct().take(uniqueCardsNeeded)
             } else {
-                allGameCardImages.distinct().let { distinctImages ->
+                val distinctImages = allGameCardImages.distinct()
+                if (distinctImages.isEmpty()) {
+                    List(uniqueCardsNeeded) { R.drawable.card_back }
+                } else {
                     List(uniqueCardsNeeded) { distinctImages.getOrElse(it % distinctImages.size) { R.drawable.card_back } }
                 }
             }
@@ -816,3 +879,5 @@ fun TestingPreview() {
 }
 
 // Assicurati che R.string.game_loading_board e R.string.game_error_board_null siano definite in strings.xml
+// Assicurati che R.string.game_dialog_finished_title sia definita in strings.xml
+// Assicurati che R.string.game_dialog_finished_subtitle sia definita in strings.xml

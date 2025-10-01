@@ -256,7 +256,8 @@ class GameViewModel(
                     
                     if(checkAllCardsCoupled()) {
                         winSound()
-                        gameWon.value = true 
+                        gameWon.value = true
+                        timerViewModel.stopTimer() // MODIFICA: Ferma il timer qui
                         requestPauseDialog() // Mostra GameWonDialog tramite gamePaused=true
                         viewModelScope.launch {
                             val pName = appSettingsDataStore.playerName.first()
@@ -419,7 +420,7 @@ class GameViewModel(
         Log.d("GameVM_Score", "refreshPointsWrongCouple - Score: ${_score.intValue}, Time Penalty: $timePenaltyDeciPoints")
     }
     private fun refreshPointsRightCouple(timeDeltaInSeconds: Long) { 
-        val timeBonusDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = 1)
+        val timeBonusDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = 3) // MODIFICATO
         val boardBonusDeciPoints = calculateBoardDifficultyDeciBonusPoints()
         _score.intValue = _score.intValue + timeBonusDeciPoints + boardBonusDeciPoints 
         Log.d("GameVM_Score", "refreshPointsRightCouple - Score: ${_score.intValue}, Time Bonus: $timeBonusDeciPoints, Board Bonus: $boardBonusDeciPoints")

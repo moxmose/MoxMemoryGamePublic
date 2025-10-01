@@ -152,7 +152,7 @@ fun PreferencesScreen(
             .fillMaxSize()
             .padding(innerPadding),
     ) {
-        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds)
+        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds, modifier = Modifier.fillMaxSize()) // MODIFICATO
         Column(modifier = Modifier.fillMaxSize()) { 
             Box(modifier = Modifier.weight(1f)) { 
                 LazyColumn(

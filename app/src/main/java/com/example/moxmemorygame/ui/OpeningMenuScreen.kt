@@ -57,7 +57,7 @@ fun OpeningMenuScreen(
             .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
-        BackgroundImg(selectedBackgrounds = viewModel.backgroundPreference, alpha = 0.5f)
+        BackgroundImg(selectedBackgrounds = viewModel.backgroundPreference, modifier = Modifier.fillMaxSize(), alpha = 0.5f) // MODIFICATO
 
         Column(modifier = Modifier.fillMaxSize()) { // Colonna principale per layout
             LazyColumn(

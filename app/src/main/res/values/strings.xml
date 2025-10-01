@@ -62,6 +62,8 @@
     <string name="preferences_scroll_down_indicator">Scroll\nDown</string>
     <string name="game_loading_board">Loading game board...</string>
     <string name="game_error_board_null">Error: Board not available. Please reset.</string>
+    <string name="game_dialog_finished_title">FINISHED!</string>
+    <string name="game_dialog_finished_subtitle">GAME ENDED</string>
 
 
 </resources>
