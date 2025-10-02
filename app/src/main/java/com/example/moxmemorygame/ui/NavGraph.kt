@@ -6,8 +6,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.moxmemorygame.GameApp
 import com.example.moxmemorygame.ui.screens.GameScreen
+import com.example.moxmemorygame.ui.screens.OpeningMenuScreen
+import com.example.moxmemorygame.ui.screens.PreferencesScreen
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import org.koin.core.context.GlobalContext

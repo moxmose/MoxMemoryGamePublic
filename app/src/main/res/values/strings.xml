@@ -16,11 +16,16 @@
     <string name="preferences_screen_title">PREFERENCES</string>
     <string name="preferences_player_name_label">PLAYER\'S NAME [%1$d/%2$d]</string>
     <string name="preferences_button_save_player_name">SAVE PLAYER NAME</string>
-    <string name="preferences_button_select_backgrounds">SELECT BACKGROUNDS\n(%1$d selected)</string>
+    <string name="preferences_button_select_backgrounds">SELECT BACKGROUNDS
+(%1$d selected)</string>
+    <string name="preferences_board_dimensions_title">BOARD DIMENSIONS</string>
     <string name="preferences_card_selection_title">CARD SELECTION:</string>
-    <string name="preferences_button_select_refined_cards">SELECT REFINED CARDS\n(%1$d/%2$d selected)</string>
-    <string name="preferences_button_select_simple_cards">SELECT SIMPLE CARDS\n(%1$d/%2$d selected)</string>
-    <string name="preferences_min_cards_required_info">Minimum %1$d cards required in total (currently %2$d).</string>
+    <string name="preferences_button_select_refined_cards">SELECT REFINED CARDS
+(%1$d/%2$d selected)</string>
+    <string name="preferences_button_select_simple_cards">SELECT SIMPLE CARDS
+(%1$d/%2$d selected)</string>
+    <string name="preferences_min_cards_required_info_part1">Minimum cards required in total</string>
+    <string name="preferences_min_cards_required_info_part2">(%1$d / %2$d)</string>
     <string name="preferences_button_back_to_main_menu">BACK TO MAIN MENU</string>
 
     <!-- Card Types -->
