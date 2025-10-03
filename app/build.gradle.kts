@@ -59,19 +59,12 @@ dependencies {
 
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
-//    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // Datastore preferences
     implementation(libs.androidx.datastore.preferences)
 
-    //implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
-    // Lifecycles only (without ViewModel or LiveData)
-    //implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
-    // Lifecycle utilities for Compose
-    //implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.5.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
-    //libs.androidx.lifecycle.viewmodel.compose)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -83,7 +76,13 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.runtime.android)
     implementation(libs.androidx.datastore.core)
+
+    // Test Dependencies
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.truth)
+    testImplementation(libs.mockito.core)
+    
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

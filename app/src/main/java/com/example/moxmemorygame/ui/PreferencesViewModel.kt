@@ -1,6 +1,5 @@
 package com.example.moxmemorygame.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
@@ -51,11 +50,8 @@ class PreferencesViewModel(
     private var lastSaveDimensionsJob: Job? = null
 
     init {
-        Log.d("PrefVM_Init", "Initializing PreferencesViewModel")
         viewModelScope.launch {
-            Log.d("PrefVM_Init", "Waiting for DataStore to be loaded...")
             appSettingsDataStore.isDataLoaded.filter { it }.first()
-            Log.d("PrefVM_Init", "DataStore is loaded.")
 
             _selectedBackgrounds.value = appSettingsDataStore.selectedBackgrounds.first()
 
@@ -65,7 +61,6 @@ class PreferencesViewModel(
             val currentCardsFromDataStore = appSettingsDataStore.selectedCards.first()
 
             if (currentCardsFromDataStore.size < initialMinRequiredPairs) {
-                Log.w("PrefVM_Init", "Cards from DataStore insufficient. Forcing defaults.")
                 appSettingsDataStore.saveSelectedCards(RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
             }
             _tempSelectedCards.value = appSettingsDataStore.selectedCards.first()

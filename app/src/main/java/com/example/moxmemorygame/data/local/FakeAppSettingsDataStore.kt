@@ -1,6 +1,5 @@
 package com.example.moxmemorygame.data.local // Pacchetto aggiornato
 
-import android.util.Log
 import com.example.moxmemorygame.model.ScoreEntry
 // Importa IAppSettingsDataStore dalla sua nuova posizione
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
@@ -41,17 +40,14 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore { // Nome classe semplifi
 
     override suspend fun savePlayerName(name: String) {
         _playerName.value = name
-        Log.d("FakeDataStore", "Saved player name: $name")
     }
 
     override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
         _selectedBackgrounds.value = backgrounds
-        Log.d("FakeDataStore", "Saved backgrounds: $backgrounds")
     }
 
     override suspend fun saveSelectedCards(selectedCardsToSave: Set<String>) {
         _selectedCards.value = selectedCardsToSave
-        Log.d("FakeDataStore", "Saved cards: $selectedCardsToSave")
     }
 
     override suspend fun saveScore(playerName: String, score: Int) {
@@ -63,14 +59,11 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore { // Nome classe semplifi
         _topRanking.value = currentRanking
             .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenByDescending { it.timestamp })
             .take(ScoreEntry.MAX_RANKING_ENTRIES)
-        
-        Log.d("FakeDataStore", "Saved score: $newEntry. New ranking: ${_topRanking.value}")
     }
 
     // NUOVA IMPLEMENTAZIONE FUNZIONE DI SALVATAGGIO DIMENSIONI
     override suspend fun saveBoardDimensions(width: Int, height: Int) {
         _selectedBoardWidth.value = width
         _selectedBoardHeight.value = height
-        Log.d("FakeDataStore", "Saved board dimensions: width=$width, height=$height")
     }
 }
