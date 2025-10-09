@@ -348,4 +348,62 @@ class PreferencesViewModelTest {
         // 3. Assert
         assertThat(fakeDataStore.playerName.value).isEqualTo(initialName)
     }
+    
+    @Test
+    fun `getCardDisplayName returns formatted name`() = runTest {
+        // Arrange
+        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
+        
+        // Act & Assert
+        val refinedName = viewModel.getCardDisplayName("img_c_05")
+        assertThat(refinedName).isEqualTo("Refined 5")
+
+        val simpleName = viewModel.getCardDisplayName("img_s_08")
+        assertThat(simpleName).isEqualTo("Simple 8")
+
+        val unknownName = viewModel.getCardDisplayName("unknown_resource")
+        assertThat(unknownName).isEqualTo("unknown_resource")
+    }
+
+    @Test
+    fun `clearCardSelectionError clears the error`() = runTest {
+        // Arrange: first, create an error state
+        fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
+        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
+        advanceUntilIdle()
+        viewModel.prepareForCardSelection()
+        // Pulisci lo stato e crea una selezione invalida
+        viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), false)
+        viewModel.updateCardSelection("img_c_01", true) // select only 1 card
+        viewModel.confirmCardSelections()
+        assertThat(viewModel.cardSelectionError.value).isNotNull()
+
+        // Act
+        viewModel.clearCardSelectionError()
+
+        // Assert
+        assertThat(viewModel.cardSelectionError.value).isNull()
+    }
+
+    @Test
+    fun `clearBoardDimensionError clears the error`() = runTest {
+        // Arrange: first, create an error state
+        val initialWidth = 3
+        val initialHeight = 4
+        val cardsForInitialBoard = (initialWidth * initialHeight) / 2 // 6
+        val selectedCards = (1..cardsForInitialBoard).map { "img_c_%02d".format(it) }.toSet()
+        fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
+        fakeDataStore.saveSelectedCards(selectedCards)
+
+        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
+        advanceUntilIdle()
+        viewModel.updateBoardDimensions(5, 4) // This action will cause an error (requires 10 cards, we have 6)
+        assertThat(viewModel.boardDimensionError.value).isNotNull()
+
+        // Act
+        viewModel.clearBoardDimensionError()
+
+        // Assert
+        assertThat(viewModel.boardDimensionError.value).isNull()
+    }
 }
