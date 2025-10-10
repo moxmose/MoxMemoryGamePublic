@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
-import com.example.moxmemorygame.data.local.RealAppSettingsDataStore // Per fallback
 import com.example.moxmemorygame.model.GameBoard
 import com.example.moxmemorygame.model.GameCard
 import kotlinx.coroutines.Dispatchers
@@ -112,7 +111,7 @@ class GameViewModel(
 
         if (userSelectedResourceNames.size < uniqueCardsNeeded) {
             Log.w("GameVM", "loadAndShuffleCards - User selected cards insufficient. Falling back to default.")
-            userSelectedResourceNames = RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS
+            userSelectedResourceNames = IAppSettingsDataStore.DEFAULT_SELECTED_CARDS
         }
         
         val actualCardResourceNamesForGame = userSelectedResourceNames.shuffled().take(uniqueCardsNeeded)

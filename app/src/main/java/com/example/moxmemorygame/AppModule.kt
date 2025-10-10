@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 // Import aggiunti/corretti per IAppSettingsDataStore e RealAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.data.local.RealAppSettingsDataStore
+import com.example.moxmemorygame.data.local.dataStore
 import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.NavigationManager
 import com.example.moxmemorygame.ui.OpeningMenuViewModel
@@ -25,8 +26,7 @@ val myAppModule = module {
 
     single<CoroutineScope>(named("ApplicationScope")) {CoroutineScope(SupervisorJob() + Dispatchers.Default)}
     
-    // Ora Koin userà RealAppSettingsDataStore dal package data.local grazie agli import corretti
-    single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext()) }
+    single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext().dataStore, get(named("ApplicationScope"))) }
 
     viewModel { (navController: NavHostController) ->
         GameViewModel(

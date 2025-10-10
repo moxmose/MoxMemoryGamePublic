@@ -16,9 +16,9 @@ import kotlinx.coroutines.launch
  * It provides functionalities to start, stop, reset, and check the status of the timer.
  * It exposes the elapsed time as a StateFlow for UI consumption.
  */
-class TimerViewModel: ViewModel() {
+open class TimerViewModel: ViewModel() {
     private val _elapsedSeconds = MutableStateFlow(0L)
-    val elapsedSeconds = _elapsedSeconds.asStateFlow()
+    open val elapsedSeconds = _elapsedSeconds.asStateFlow()
 
     private var timerJob: Job? = null
     private var isPaused: Boolean = false
@@ -51,7 +51,7 @@ class TimerViewModel: ViewModel() {
      *   - `_elapsedSeconds`: A mutable state holder (e.g., MutableLiveData, MutableStateFlow)
      *     that stores the number of elapsed seconds.
      */
-    fun startTimer() {
+    open fun startTimer() {
         timerJob?.cancel()
         isPaused = false
         timerJob = viewModelScope.launch {
@@ -74,7 +74,7 @@ class TimerViewModel: ViewModel() {
      *
      * If no timer is running (i.e., `timerJob` is already `null`), calling this function has no effect.
      */
-    fun stopTimer() {
+    open fun stopTimer() {
         timerJob?.cancel()
         isPaused = true
         timerJob = null
@@ -85,7 +85,7 @@ class TimerViewModel: ViewModel() {
      *
      * Sets the elapsed time to 0 and stops the timer.
      */
-    fun resetTimer() {
+    open fun resetTimer() {
         _elapsedSeconds.value = 0L
         stopTimer()
     }
@@ -121,7 +121,7 @@ class TimerViewModel: ViewModel() {
      *
      * @see Job.cancelAndJoin
      */
-    suspend fun stopAndAwaitTimerCompletion() {
+    open suspend fun stopAndAwaitTimerCompletion() {
         timerJob?.cancelAndJoin()
         isPaused = true
         timerJob = null
@@ -132,7 +132,7 @@ class TimerViewModel: ViewModel() {
      *
      * @return `true` if the timer is running, `false` otherwise.
      */
-    fun isTimerRunning(): Boolean {
+    open fun isTimerRunning(): Boolean {
         return timerJob?.isActive ?: false
     }
 
@@ -141,15 +141,15 @@ class TimerViewModel: ViewModel() {
      *
      * @return The elapsed time in seconds.
      */
-    fun getElapsedTime(): Long {
+    open fun getElapsedTime(): Long {
         return _elapsedSeconds.value
     }
 
-    fun pauseTimer(){
+    open fun pauseTimer(){
         isPaused = true
     }
 
-    fun resumeTimer(){
+    open fun resumeTimer(){
         isPaused = false
     }
 

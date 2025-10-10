@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
-import com.example.moxmemorygame.data.local.RealAppSettingsDataStore // Per i valori di default
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +60,7 @@ class PreferencesViewModel(
             val currentCardsFromDataStore = appSettingsDataStore.selectedCards.first()
 
             if (currentCardsFromDataStore.size < initialMinRequiredPairs) {
-                appSettingsDataStore.saveSelectedCards(RealAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
+                appSettingsDataStore.saveSelectedCards(IAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
             }
             _tempSelectedCards.value = appSettingsDataStore.selectedCards.first()
         }
