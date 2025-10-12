@@ -22,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
+import org.koin.core.context.stopKoin
 import java.io.File
 
 @ExperimentalCoroutinesApi
@@ -51,6 +52,7 @@ class RealAppSettingsDataStoreTest {
     fun tearDown() {
         getTestFile().delete()
         testCoroutineScope.coroutineContext[Job]?.cancel()
+        stopKoin()
     }
 
     @Test
