@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.ui
 
+import android.os.Build
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.google.common.truth.Truth.assertThat
@@ -14,52 +15,40 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
+import org.junit.runner.RunWith
+import org.koin.core.context.stopKoin
 import org.mockito.Mockito.mock
-
-// Definiamo una regola per gestire le coroutine nei test
-@ExperimentalCoroutinesApi
-class MainCoroutineRule(private val dispatcher: TestDispatcher = StandardTestDispatcher()) :
-    TestWatcher() {
-    override fun starting(description: Description) {
-        super.starting(description)
-        Dispatchers.setMain(dispatcher)
-    }
-
-    override fun finished(description: Description) {
-        super.finished(description)
-        Dispatchers.resetMain()
-    }
-}
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.Q])
 class PreferencesViewModelTest {
 
-    // Applica la regola per le coroutine a tutti i test in questa classe
-    @get:Rule
-    val mainCoroutineRule = MainCoroutineRule()
-
+    private lateinit var testDispatcher: TestDispatcher
     private lateinit var viewModel: PreferencesViewModel
     private lateinit var fakeDataStore: FakeAppSettingsDataStore
     private lateinit var mockNavController: NavHostController
 
     @Before
     fun setUp() {
-        // Inizializza le dipendenze, ma NON il ViewModel
+        testDispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(testDispatcher)
+
         fakeDataStore = FakeAppSettingsDataStore()
         mockNavController = mock(NavHostController::class.java)
     }
 
     @After
     fun tearDown() {
-        // Pulizia, se necessaria
+        Dispatchers.resetMain()
+        stopKoin()
     }
 
     @Test
-    fun `toggleSelectAllBackgrounds when deselecting all falls back to first selected`() = runTest {
+    fun `toggleSelectAllBackgrounds when deselecting all falls back to first selected`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialSelection = setOf("background_02", "background_04", "background_00")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
@@ -79,7 +68,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateCardSelection modifies only temp state`() = runTest {
+    fun `updateCardSelection modifies only temp state`() = runTest(testDispatcher) {
         // 1. Arrange: Crea uno stato iniziale VALIDO
         val minRequired = (3 * 4) / 2 // 6 carte per una griglia 3x4
         fakeDataStore.saveBoardDimensions(3, 4)
@@ -107,7 +96,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `confirmCardSelections when selection is valid saves to DataStore`() = runTest {
+    fun `confirmCardSelections when selection is valid saves to DataStore`() = runTest(testDispatcher) {
         // 1. Arrange
         val minRequired = (3 * 4) / 2 // 6
         fakeDataStore.saveBoardDimensions(3, 4)
@@ -135,7 +124,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `confirmCardSelections when selection is invalid does not save and sets error`() = runTest {
+    fun `confirmCardSelections when selection is invalid does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
         val minRequired = (4 * 5) / 2 // 10
         val initialCards = (1..minRequired + 2).map { "img_c_%02d".format(it) }.toSet()
@@ -161,7 +150,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when valid saves and clears error`() = runTest {
+    fun `updateBoardDimensions when valid saves and clears error`() = runTest(testDispatcher) {
         // 1. Arrange: Partiamo da una griglia grande con abbastanza carte
         val initialWidth = 4
         val initialHeight = 5
@@ -187,7 +176,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when invalid does not save and sets error`() = runTest {
+    fun `updateBoardDimensions when invalid does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialWidth = 3
         val initialHeight = 4
@@ -214,7 +203,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when height is below min does not save and sets error`() = runTest {
+    fun `updateBoardDimensions when height is below min does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialWidth = 3
         val initialHeight = 4
@@ -232,7 +221,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when cell count is odd does not save and sets error`() = runTest {
+    fun `updateBoardDimensions when cell count is odd does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialWidth = 3
         val initialHeight = 4
@@ -251,7 +240,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `toggleSelectAllBackgrounds when selecting all selects all`() = runTest {
+    fun `toggleSelectAllBackgrounds when selecting all selects all`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialSelection = setOf("background_00")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
@@ -268,7 +257,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBackgroundSelection when deselecting last one is ignored`() = runTest {
+    fun `updateBackgroundSelection when deselecting last one is ignored`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialSelection = setOf("background_01")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
@@ -287,7 +276,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `confirmBackgroundSelections saves to DataStore`() = runTest {
+    fun `confirmBackgroundSelections saves to DataStore`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialSelection = setOf("background_00")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
@@ -316,7 +305,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updatePlayerName when name is valid saves to DataStore`() = runTest {
+    fun `updatePlayerName when name is valid saves to DataStore`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialName = "Player1"
         fakeDataStore.savePlayerName(initialName)
@@ -333,7 +322,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updatePlayerName when name is too long is ignored`() = runTest {
+    fun `updatePlayerName when name is too long is ignored`() = runTest(testDispatcher) {
         // 1. Arrange
         val initialName = "Player1"
         fakeDataStore.savePlayerName(initialName)
@@ -350,7 +339,7 @@ class PreferencesViewModelTest {
     }
     
     @Test
-    fun `getCardDisplayName returns formatted name`() = runTest {
+    fun `getCardDisplayName returns formatted name`() = runTest(testDispatcher) {
         // Arrange
         viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         
@@ -366,7 +355,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `clearCardSelectionError clears the error`() = runTest {
+    fun `clearCardSelectionError clears the error`() = runTest(testDispatcher) {
         // Arrange: first, create an error state
         fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
         viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
@@ -386,7 +375,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `clearBoardDimensionError clears the error`() = runTest {
+    fun `clearBoardDimensionError clears the error`() = runTest(testDispatcher) {
         // Arrange: first, create an error state
         val initialWidth = 3
         val initialHeight = 4

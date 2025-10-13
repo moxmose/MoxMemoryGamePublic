@@ -11,19 +11,31 @@ class FakeTimerViewModel : TimerViewModel() {
     private val _elapsedSeconds = MutableStateFlow(0L)
     override val elapsedSeconds = _elapsedSeconds.asStateFlow()
 
+    private var isRunning = false
+
     override fun startTimer() {
-        // In the fake, this does nothing
+        isRunning = true
     }
 
     override fun stopTimer() {
-        // In the fake, this does nothing
+        isRunning = false
     }
 
     override fun resetTimer() {
         _elapsedSeconds.value = 0L
+        isRunning = false
+    }
+
+    override fun isTimerRunning(): Boolean = isRunning
+
+    /**
+     * Sets a specific elapsed time for testing.
+     */
+    fun setElapsedTime(seconds: Long) {
+        _elapsedSeconds.value = seconds
     }
 
     override suspend fun stopAndAwaitTimerCompletion() {
-        // In the fake, this does nothing
+        stopTimer()
     }
 }

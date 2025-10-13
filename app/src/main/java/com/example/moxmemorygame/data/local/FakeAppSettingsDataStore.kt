@@ -21,6 +21,10 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     private val _lastPlayedEntry = MutableStateFlow<ScoreEntry?>(null)
     override val lastPlayedEntry: StateFlow<ScoreEntry?> = _lastPlayedEntry.asStateFlow()
 
+    // Proprietà aggiuntiva per facilitare i test
+    private val _lastScore = MutableStateFlow<Int?>(null)
+    val lastScore: StateFlow<Int?> = _lastScore.asStateFlow()
+
     private val _selectedBoardWidth = MutableStateFlow(IAppSettingsDataStore.DEFAULT_BOARD_WIDTH)
     override val selectedBoardWidth: StateFlow<Int> = _selectedBoardWidth.asStateFlow()
 
@@ -47,6 +51,7 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     override suspend fun saveScore(playerName: String, score: Int) {
         val newEntry = ScoreEntry(playerName, score, System.currentTimeMillis())
         _lastPlayedEntry.value = newEntry
+        _lastScore.value = score // Aggiorna la proprietà per i test
         
         val currentRanking = _topRanking.value.toMutableList()
         currentRanking.add(newEntry)

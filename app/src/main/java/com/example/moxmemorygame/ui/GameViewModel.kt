@@ -12,6 +12,7 @@ import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.GameBoard
 import com.example.moxmemorygame.model.GameCard
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +28,9 @@ class GameViewModel(
     private val navController: NavHostController,
     private val timerViewModel: TimerViewModel,
     private val appSettingsDataStore: IAppSettingsDataStore,
-    private val resourceNameToId: (String) -> Int
+    private val resourceNameToId: (String) -> Int,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val delayProvider: suspend (Long) -> Unit = { delay(it) }
 ): ViewModel() {
     val playerName: StateFlow<String> = appSettingsDataStore.playerName
     val selectedBackgrounds: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
@@ -275,8 +278,8 @@ class GameViewModel(
                     refreshPointsWrongCouple(currentElapsedTime - timeOfLastMove)
                     failSound()
                     timeOfLastMove = currentElapsedTime
-                    viewModelScope.launch(Dispatchers.Default) {
-                        delay(1400L)
+                    viewModelScope.launch(ioDispatcher) {
+                        delayProvider(1400L)
                         withContext(Dispatchers.Main) {
                             setTablePlayCardTurned(x = lastMove.first,y = lastMove.second, newTurnedState = false)
                             setTablePlayCardTurned(x = x,y = y, newTurnedState = false)
