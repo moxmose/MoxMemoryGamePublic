@@ -2,8 +2,13 @@ package com.example.moxmemorygame.ui
 
 import android.os.Build
 import androidx.compose.runtime.MutableState
-import androidx.navigation.NavHostController
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.composable
+import androidx.navigation.createGraph
+import androidx.navigation.testing.TestNavHostController
+import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.GameCard
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +24,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
-import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -32,7 +36,7 @@ class GameViewModelTest {
 
     private lateinit var viewModel: GameViewModel
     private lateinit var fakeDataStore: FakeAppSettingsDataStore
-    private lateinit var mockNavController: NavHostController
+    private lateinit var testNavController: TestNavHostController
     private lateinit var fakeTimerViewModel: FakeTimerViewModel
 
     @Before
@@ -41,11 +45,20 @@ class GameViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         fakeDataStore = FakeAppSettingsDataStore()
-        mockNavController = mock(NavHostController::class.java)
         fakeTimerViewModel = FakeTimerViewModel()
 
+        // Use the TestNavHostController
+        testNavController = TestNavHostController(ApplicationProvider.getApplicationContext())
+        testNavController.navigatorProvider.addNavigator(ComposeNavigator())
+        testNavController.graph = testNavController.createGraph(startDestination = "game_screen") {
+            composable("game_screen") { }
+            composable(Screen.OpeningMenuScreen.route) { }
+        }
+    }
+
+    private fun initViewModel() {
         viewModel = GameViewModel(
-            navController = mockNavController,
+            navController = testNavController,
             timerViewModel = fakeTimerViewModel,
             appSettingsDataStore = fakeDataStore,
             resourceNameToId = { 0 },
@@ -62,6 +75,7 @@ class GameViewModelTest {
 
     @Test
     fun `initial state is correct`() = runTest(testDispatcher) {
+        initViewModel()
         advanceUntilIdle()
         
         assertThat(viewModel.isBoardInitialized.value).isTrue()
@@ -72,7 +86,70 @@ class GameViewModelTest {
     }
 
     @Test
+    fun `loading uses default cards when user selection is insufficient`() = runTest(testDispatcher) {
+        // Arrange
+        val boardWidth = 4
+        val boardHeight = 6
+        val requiredCards = (boardWidth * boardHeight) / 2
+        val insufficientCards = setOf("img_c_01", "img_c_02")
+        
+        fakeDataStore.saveBoardDimensions(boardWidth, boardHeight)
+        fakeDataStore.saveSelectedCards(insufficientCards)
+        
+        // Act: ViewModel initialization triggers the card loading logic
+        initViewModel()
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(viewModel.gameCardImages.size).isEqualTo(requiredCards)
+    }
+
+    @Test
+    fun `requestResetDialog sets correct states`() {
+        initViewModel()
+        // Act
+        viewModel.requestResetDialog()
+
+        // Assert
+        assertThat(viewModel.gamePaused.value).isTrue()
+        assertThat(viewModel.gameResetRequest.value).isTrue()
+    }
+
+    @Test
+    fun `cancelResetDialog correctly cancels the reset request`() {
+        initViewModel()
+        // Arrange
+        viewModel.requestResetDialog()
+
+        // Act
+        viewModel.cancelResetDialog()
+
+        // Assert
+        assertThat(viewModel.gamePaused.value).isFalse()
+        assertThat(viewModel.gameResetRequest.value).isFalse()
+    }
+
+    @Test
+    fun `navigateToOpeningMenuAndCleanupDialogStates cleans states and navigates`() {
+        initViewModel()
+        // Arrange
+        viewModel.gameWon.value = true
+        viewModel.gamePaused.value = true
+        viewModel.gameResetRequest.value = true
+
+        // Act
+        viewModel.navigateToOpeningMenuAndCleanupDialogStates()
+
+        // Assert
+        assertThat(viewModel.gameWon.value).isFalse()
+        assertThat(viewModel.gamePaused.value).isFalse()
+        assertThat(viewModel.gameResetRequest.value).isFalse()
+        assertThat(testNavController.currentDestination?.route).isEqualTo(Screen.OpeningMenuScreen.route)
+    }
+
+    @Test
     fun `checkGamePlayCardTurned when first card is turned updates state correctly`() = runTest(testDispatcher) {
+        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         
@@ -96,6 +173,7 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when correct pair is turned updates score and state`() = runTest(testDispatcher) {
+        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -124,6 +202,7 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when incorrect pair is turned flips them back`() = runTest(testDispatcher) {
+        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -150,6 +229,7 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when last pair is found triggers win condition`() = runTest(testDispatcher) {
+        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -181,6 +261,7 @@ class GameViewModelTest {
 
     @Test
     fun `resetCurrentGame resets all game state`() = runTest(testDispatcher) {
+        initViewModel()
         // 1. Arrange: Simulate a game in progress
         advanceUntilIdle()
         viewModel.score.intValue = 500
