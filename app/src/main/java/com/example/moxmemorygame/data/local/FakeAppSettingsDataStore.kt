@@ -1,6 +1,7 @@
 package com.example.moxmemorygame.data.local
 
 import com.example.moxmemorygame.model.ScoreEntry
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,10 +22,6 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     private val _lastPlayedEntry = MutableStateFlow<ScoreEntry?>(null)
     override val lastPlayedEntry: StateFlow<ScoreEntry?> = _lastPlayedEntry.asStateFlow()
 
-    // Proprietà aggiuntiva per facilitare i test
-    private val _lastScore = MutableStateFlow<Int?>(null)
-    val lastScore: StateFlow<Int?> = _lastScore.asStateFlow()
-
     private val _selectedBoardWidth = MutableStateFlow(IAppSettingsDataStore.DEFAULT_BOARD_WIDTH)
     override val selectedBoardWidth: StateFlow<Int> = _selectedBoardWidth.asStateFlow()
 
@@ -36,22 +33,31 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
 
     override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true)
 
+    private var saveDelayMillis = 0L
+
+    fun setSaveDelay(delay: Long) {
+        saveDelayMillis = delay
+    }
+
     override suspend fun savePlayerName(name: String) {
+        delay(saveDelayMillis)
         _playerName.value = name
     }
 
     override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
+        delay(saveDelayMillis)
         _selectedBackgrounds.value = backgrounds
     }
 
     override suspend fun saveSelectedCards(cards: Set<String>) {
+        delay(saveDelayMillis)
         _selectedCards.value = cards
     }
 
     override suspend fun saveScore(playerName: String, score: Int) {
+        delay(saveDelayMillis)
         val newEntry = ScoreEntry(playerName, score, System.currentTimeMillis())
         _lastPlayedEntry.value = newEntry
-        _lastScore.value = score // Aggiorna la proprietà per i test
         
         val currentRanking = _topRanking.value.toMutableList()
         currentRanking.add(newEntry)
@@ -61,11 +67,13 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     }
 
     override suspend fun saveBoardDimensions(width: Int, height: Int) {
+        delay(saveDelayMillis)
         _selectedBoardWidth.value = width
         _selectedBoardHeight.value = height
     }
 
     override suspend fun saveIsFirstTimeLaunch(isFirstTime: Boolean) {
+        delay(saveDelayMillis)
         _isFirstTimeLaunch.value = isFirstTime
     }
 }

@@ -281,6 +281,65 @@ class GameViewModelTest {
         assertThat(fakeTimerViewModel.isTimerRunning()).isTrue() // Timer should restart
     }
 
+    @Test
+    fun `checkGamePlayCardTurned when same card is clicked twice flips it back and penalizes`() = runTest(testDispatcher) {
+        initViewModel()
+        // 1. Arrange
+        advanceUntilIdle()
+        val initialScore = viewModel.score.intValue
+        val card = viewModel.tablePlay!!.cardsArray[0][0]
+
+        // Sanity check
+        assertThat(card.value.turned).isFalse()
+
+        // 2. Act
+        // First click
+        viewModel.checkGamePlayCardTurned(0, 0, {}, {}, {}, {}, {})
+        // Check intermediate state
+        assertThat(card.value.turned).isTrue()
+
+        // Simulate time passing before the second click
+        fakeTimerViewModel.setElapsedTime(2)
+
+        // Second click on the same card
+        viewModel.checkGamePlayCardTurned(0, 0, {}, {}, {}, {}, {})
+        advanceUntilIdle()
+
+        // 3. Assert
+        assertThat(card.value.turned).isFalse() // Card should be flipped back
+        assertThat(viewModel.moves.intValue).isEqualTo(2)
+        assertThat(viewModel.score.intValue).isLessThan(initialScore) // Score should be penalized
+    }
+
+    @Test
+    fun `checkGamePlayCardTurned when coupled card is clicked does nothing`() = runTest(testDispatcher) {
+        initViewModel()
+        // 1. Arrange
+        advanceUntilIdle()
+        val board = viewModel.tablePlay!!
+        val (card1Pos, card2Pos) = findPairOnBoard(board.cardsArray)
+
+        // Couple the first pair
+        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
+        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, {}, {}, {}, {}, {})
+        advanceUntilIdle()
+
+        // Pre-condition check
+        assertThat(board.cardsArray[card1Pos.first][card1Pos.second].value.coupled).isTrue()
+
+        val scoreAfterCouple = viewModel.score.intValue
+        val movesAfterCouple = viewModel.moves.intValue
+
+        // 2. Act
+        // Click on the already coupled card
+        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
+        advanceUntilIdle()
+
+        // 3. Assert
+        assertThat(viewModel.moves.intValue).isEqualTo(movesAfterCouple)
+        assertThat(viewModel.score.intValue).isEqualTo(scoreAfterCouple)
+    }
+
     private fun findPairOnBoard(cards: Array<Array<MutableState<GameCard>>>): Pair<Pair<Int, Int>, Pair<Int, Int>> {
         val seenCards = mutableMapOf<Int, Pair<Int, Int>>()
         for (x in cards.indices) {

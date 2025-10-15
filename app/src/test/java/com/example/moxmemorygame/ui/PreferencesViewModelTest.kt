@@ -1,8 +1,13 @@
 package com.example.moxmemorygame.ui
 
 import android.os.Build
-import androidx.navigation.NavHostController
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.composable
+import androidx.navigation.createGraph
+import androidx.navigation.testing.TestNavHostController
+import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
+import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +23,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
-import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -30,7 +34,7 @@ class PreferencesViewModelTest {
     private lateinit var testDispatcher: TestDispatcher
     private lateinit var viewModel: PreferencesViewModel
     private lateinit var fakeDataStore: FakeAppSettingsDataStore
-    private lateinit var mockNavController: NavHostController
+    private lateinit var testNavController: TestNavHostController
 
     @Before
     fun setUp() {
@@ -38,7 +42,16 @@ class PreferencesViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         fakeDataStore = FakeAppSettingsDataStore()
-        mockNavController = mock(NavHostController::class.java)
+        testNavController = TestNavHostController(ApplicationProvider.getApplicationContext())
+        testNavController.navigatorProvider.addNavigator(ComposeNavigator())
+        testNavController.graph = testNavController.createGraph(startDestination = "preferences") {
+            composable("preferences") { }
+            composable(Screen.OpeningMenuScreen.route) { }
+        }
+    }
+
+    private fun initViewModel() {
+        viewModel = PreferencesViewModel(navController = testNavController, appSettingsDataStore = fakeDataStore)
     }
 
     @After
@@ -48,12 +61,84 @@ class PreferencesViewModelTest {
     }
 
     @Test
+    fun `init when selected cards are insufficient loads default cards`() = runTest(testDispatcher) {
+        // Arrange
+        val boardWidth = 4
+        val boardHeight = 6 // Requires 12 cards
+        val insufficientCards = setOf("img_c_01", "img_c_02") // Only 2 cards
+
+        fakeDataStore.saveBoardDimensions(boardWidth, boardHeight)
+        fakeDataStore.saveSelectedCards(insufficientCards)
+
+        // Act
+        initViewModel()
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(viewModel.selectedCards.value).isEqualTo(IAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
+        assertThat(viewModel.tempSelectedCards.value).isEqualTo(IAppSettingsDataStore.DEFAULT_SELECTED_CARDS)
+    }
+
+    @Test
+    fun `onBackToMainMenuClicked waits for save jobs then navigates`() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        fakeDataStore.setSaveDelay(2000) // Mock a long save operation
+        testNavController.setCurrentDestination("preferences")
+
+        // Act
+        viewModel.confirmBackgroundSelections() // This will start a long-running save job
+        viewModel.onBackToMainMenuClicked()
+
+        // Assert
+        // Immediately after calling, we should still be on the same screen because the save is in progress
+        assertThat(testNavController.currentDestination?.route).isEqualTo("preferences")
+
+        // Advance time to allow the save to complete
+        advanceUntilIdle()
+
+        // Now, we expect navigation to have occurred
+        assertThat(testNavController.currentDestination?.route).isNotEqualTo("preferences")
+    }
+
+    @Test
+    fun `updateBoardDimensions when width is below min sets error`() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        advanceUntilIdle()
+        val invalidWidth = PreferencesViewModel.MIN_BOARD_WIDTH - 1
+
+        // Act
+        viewModel.updateBoardDimensions(invalidWidth, PreferencesViewModel.MIN_BOARD_HEIGHT)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(viewModel.boardDimensionError.value).isNotNull()
+    }
+
+    @Test
+    fun `updateBoardDimensions when height is above max sets error`() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        advanceUntilIdle()
+        val invalidHeight = PreferencesViewModel.MAX_BOARD_HEIGHT + 1
+
+        // Act
+        viewModel.updateBoardDimensions(PreferencesViewModel.MIN_BOARD_WIDTH, invalidHeight)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(viewModel.boardDimensionError.value).isNotNull()
+    }
+
+
+    @Test
     fun `toggleSelectAllBackgrounds when deselecting all falls back to first selected`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialSelection = setOf("background_02", "background_04", "background_00")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         assertThat(viewModel.selectedBackgrounds.value).isEqualTo(initialSelection)
@@ -70,12 +155,12 @@ class PreferencesViewModelTest {
     @Test
     fun `updateCardSelection modifies only temp state`() = runTest(testDispatcher) {
         // 1. Arrange: Crea uno stato iniziale VALIDO
+        initViewModel()
         val minRequired = (3 * 4) / 2 // 6 carte per una griglia 3x4
         fakeDataStore.saveBoardDimensions(3, 4)
         val initialCards = (1..minRequired).map { "img_c_%02d".format(it) }.toSet()
         fakeDataStore.saveSelectedCards(initialCards)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
         viewModel.prepareForCardSelection() // Popola lo stato temporaneo
 
@@ -98,11 +183,11 @@ class PreferencesViewModelTest {
     @Test
     fun `confirmCardSelections when selection is valid saves to DataStore`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val minRequired = (3 * 4) / 2 // 6
         fakeDataStore.saveBoardDimensions(3, 4)
         fakeDataStore.saveSelectedCards(setOf("img_c_01")) // Stato iniziale volutamente non valido
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
         viewModel.prepareForCardSelection()
 
@@ -126,12 +211,12 @@ class PreferencesViewModelTest {
     @Test
     fun `confirmCardSelections when selection is invalid does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val minRequired = (4 * 5) / 2 // 10
         val initialCards = (1..minRequired + 2).map { "img_c_%02d".format(it) }.toSet()
         fakeDataStore.saveBoardDimensions(4, 5)
         fakeDataStore.saveSelectedCards(initialCards)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
         viewModel.prepareForCardSelection()
 
@@ -152,6 +237,7 @@ class PreferencesViewModelTest {
     @Test
     fun `updateBoardDimensions when valid saves and clears error`() = runTest(testDispatcher) {
         // 1. Arrange: Partiamo da una griglia grande con abbastanza carte
+        initViewModel()
         val initialWidth = 4
         val initialHeight = 5
         val requiredCards = (initialWidth * initialHeight) / 2 // 10
@@ -160,7 +246,6 @@ class PreferencesViewModelTest {
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
         fakeDataStore.saveSelectedCards(selectedCards)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act: Riduciamo a una dimensione più piccola ma valida
@@ -178,6 +263,7 @@ class PreferencesViewModelTest {
     @Test
     fun `updateBoardDimensions when invalid does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialWidth = 3
         val initialHeight = 4
         val requiredCards = (initialWidth * initialHeight) / 2 // 6
@@ -186,7 +272,6 @@ class PreferencesViewModelTest {
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
         fakeDataStore.saveSelectedCards(selectedCards)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act: Prova a impostare dimensioni che richiedono più carte di quelle selezionate
@@ -205,10 +290,10 @@ class PreferencesViewModelTest {
     @Test
     fun `updateBoardDimensions when height is below min does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialWidth = 3
         val initialHeight = 4
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act
@@ -223,10 +308,10 @@ class PreferencesViewModelTest {
     @Test
     fun `updateBoardDimensions when cell count is odd does not save and sets error`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialWidth = 3
         val initialHeight = 4
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act
@@ -242,10 +327,10 @@ class PreferencesViewModelTest {
     @Test
     fun `toggleSelectAllBackgrounds when selecting all selects all`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialSelection = setOf("background_00")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act
@@ -259,10 +344,10 @@ class PreferencesViewModelTest {
     @Test
     fun `updateBackgroundSelection when deselecting last one is ignored`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialSelection = setOf("background_01")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         assertThat(viewModel.selectedBackgrounds.value).isEqualTo(initialSelection)
@@ -278,10 +363,10 @@ class PreferencesViewModelTest {
     @Test
     fun `confirmBackgroundSelections saves to DataStore`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialSelection = setOf("background_00")
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(initialSelection)
@@ -307,9 +392,9 @@ class PreferencesViewModelTest {
     @Test
     fun `updatePlayerName when name is valid saves to DataStore`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialName = "Player1"
         fakeDataStore.savePlayerName(initialName)
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act
@@ -324,9 +409,9 @@ class PreferencesViewModelTest {
     @Test
     fun `updatePlayerName when name is too long is ignored`() = runTest(testDispatcher) {
         // 1. Arrange
+        initViewModel()
         val initialName = "Player1"
         fakeDataStore.savePlayerName(initialName)
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
 
         // 2. Act
@@ -341,7 +426,7 @@ class PreferencesViewModelTest {
     @Test
     fun `getCardDisplayName returns formatted name`() = runTest(testDispatcher) {
         // Arrange
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
+        initViewModel()
         
         // Act & Assert
         val refinedName = viewModel.getCardDisplayName("img_c_05")
@@ -357,8 +442,8 @@ class PreferencesViewModelTest {
     @Test
     fun `clearCardSelectionError clears the error`() = runTest(testDispatcher) {
         // Arrange: first, create an error state
+        initViewModel()
         fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
         viewModel.prepareForCardSelection()
         // Pulisci lo stato e crea una selezione invalida
@@ -377,6 +462,7 @@ class PreferencesViewModelTest {
     @Test
     fun `clearBoardDimensionError clears the error`() = runTest(testDispatcher) {
         // Arrange: first, create an error state
+        initViewModel()
         val initialWidth = 3
         val initialHeight = 4
         val cardsForInitialBoard = (initialWidth * initialHeight) / 2 // 6
@@ -384,7 +470,6 @@ class PreferencesViewModelTest {
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
         fakeDataStore.saveSelectedCards(selectedCards)
 
-        viewModel = PreferencesViewModel(navController = mockNavController, appSettingsDataStore = fakeDataStore)
         advanceUntilIdle()
         viewModel.updateBoardDimensions(5, 4) // This action will cause an error (requires 10 cards, we have 6)
         assertThat(viewModel.boardDimensionError.value).isNotNull()
