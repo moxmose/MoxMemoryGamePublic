@@ -1,51 +1,70 @@
 package com.example.moxmemorygame.data.local
 
+import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Rule
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import java.io.File
 
+/**
+ * Test diagnostico per isolare il problema di DataStore.
+ * Questo test usa Robolectric per sfruttare il suo Context e file system, 
+ * eliminando le dipendenze dal test runner JVM puro e da TemporaryFolder.
+ */
+@RunWith(AndroidJUnit4::class)
 @ExperimentalCoroutinesApi
 class RealAppSettingsDataStoreTest {
 
-    @get:Rule
-    val temporaryFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
+    private lateinit var context: Context
+    private val TEST_DATASTORE_NAME = "diagnostic_test_datastore"
 
-    private val testDispatcher = StandardTestDispatcher()
+    @Before
+    fun setup() {
+        context = ApplicationProvider.getApplicationContext()
+    }
+
+    @After
+    fun tearDown() {
+        // Pulisce manualmente il file di DataStore dopo ogni test
+        val datastoreFile = context.filesDir.resolve("datastore/$TEST_DATASTORE_NAME.preferences_pb")
+        if (datastoreFile.exists()) {
+            datastoreFile.delete()
+        }
+    }
 
     @Test
-    fun `minimal datastore test - write and read`() = runTest(testDispatcher) {
-        // 1. Create a completely isolated DataStore for this single test.
+    fun `datastore test using Robolectric context`() = runTest {
+        // Arrange: Crea un DataStore usando il file system del contesto Android.
         val testDataStore = PreferenceDataStoreFactory.create(
-            scope = this, // The scope is provided by runTest
-            produceFile = { temporaryFolder.newFile("minimal_test.preferences_pb") }
+            scope = this,
+            produceFile = { context.preferencesDataStoreFile(TEST_DATASTORE_NAME) }
         )
-
-        // 2. Define a simple key and value.
         val testKey = intPreferencesKey("test_counter")
         val testValue = 123
 
-        // 3. Act: Write the value and wait for it to complete.
+        // Act
         testDataStore.edit { preferences ->
             preferences[testKey] = testValue
         }
-        advanceUntilIdle() // Ensure the write operation completes
 
-        // 4. Assert: Read the value back and check it.
+        // Advance: Esegui le coroutine in background.
+        advanceUntilIdle()
+
+        // Assert
         val savedValue = testDataStore.data.map { it[testKey] }.first()
         assertThat(savedValue).isEqualTo(testValue)
     }
-
-    /*
-    // All previous tests are commented out until we solve the core issue.
-    */
 }
