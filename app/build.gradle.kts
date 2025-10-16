@@ -59,6 +59,9 @@ dependencies {
     // Navigation for Compose
     implementation("androidx.navigation:navigation-compose:2.9.0")
 
+    // Datastore preferences
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
@@ -88,6 +91,9 @@ dependencies {
     testImplementation("androidx.test.ext:junit-ktx:1.1.5")
     testImplementation("org.robolectric:robolectric:4.16")
     testImplementation("androidx.navigation:navigation-testing:2.7.7")
+    testImplementation(libs.kotlinx.coroutines.test) // Ensure this is present
+    testImplementation("io.insert-koin:koin-test:3.4.0")
+    testImplementation("io.insert-koin:koin-test-junit4:3.4.0")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
