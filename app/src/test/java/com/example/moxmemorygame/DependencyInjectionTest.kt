@@ -2,7 +2,6 @@ package com.example.moxmemorygame
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.moxmemorygame.appModules
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -32,7 +31,7 @@ class DependencyInjectionTest : KoinTest {
         // which is instantiated by Robolectric. This ensures `checkModules` starts clean.
         stopKoin()
 
-        // We can now run checkModules. It will start its own temporary Koin application.
+        // we can now run checkModules. It will start its own temporary Koin application.
         // When it encounters a definition it cannot resolve, it will use the registered MockProvider.
         checkModules {
             androidContext(ApplicationProvider.getApplicationContext())

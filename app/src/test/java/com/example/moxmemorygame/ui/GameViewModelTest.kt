@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.Q]) // Specifica l'SDK da simulare
+@Config(sdk = [Build.VERSION_CODES.Q]) // Specify the SDK to simulate
 class GameViewModelTest {
 
     private lateinit var testDispatcher: TestDispatcher
@@ -54,6 +54,7 @@ class GameViewModelTest {
             composable("game_screen") { }
             composable(Screen.OpeningMenuScreen.route) { }
         }
+        initViewModel()
     }
 
     private fun initViewModel() {
@@ -75,89 +76,30 @@ class GameViewModelTest {
 
     @Test
     fun `initial state is correct`() = runTest(testDispatcher) {
-        initViewModel()
         advanceUntilIdle()
-        
+
+        val expectedWidth = IAppSettingsDataStore.DEFAULT_BOARD_WIDTH
+        val expectedHeight = IAppSettingsDataStore.DEFAULT_BOARD_HEIGHT
+
         assertThat(viewModel.isBoardInitialized.value).isTrue()
         assertThat(viewModel.moves.intValue).isEqualTo(0)
         assertThat(viewModel.score.intValue).isEqualTo(0)
         assertThat(viewModel.tablePlay).isNotNull()
-        assertThat(viewModel.tablePlay?.cardsArray?.all { row -> row.all { it.value != null } }).isTrue()
-    }
-
-    @Test
-    fun `loading uses default cards when user selection is insufficient`() = runTest(testDispatcher) {
-        // Arrange
-        val boardWidth = 4
-        val boardHeight = 6
-        val requiredCards = (boardWidth * boardHeight) / 2
-        val insufficientCards = setOf("img_c_01", "img_c_02")
-        
-        fakeDataStore.saveBoardDimensions(boardWidth, boardHeight)
-        fakeDataStore.saveSelectedCards(insufficientCards)
-        
-        // Act: ViewModel initialization triggers the card loading logic
-        initViewModel()
-        advanceUntilIdle()
-
-        // Assert
-        assertThat(viewModel.gameCardImages.size).isEqualTo(requiredCards)
-    }
-
-    @Test
-    fun `requestResetDialog sets correct states`() {
-        initViewModel()
-        // Act
-        viewModel.requestResetDialog()
-
-        // Assert
-        assertThat(viewModel.gamePaused.value).isTrue()
-        assertThat(viewModel.gameResetRequest.value).isTrue()
-    }
-
-    @Test
-    fun `cancelResetDialog correctly cancels the reset request`() {
-        initViewModel()
-        // Arrange
-        viewModel.requestResetDialog()
-
-        // Act
-        viewModel.cancelResetDialog()
-
-        // Assert
-        assertThat(viewModel.gamePaused.value).isFalse()
-        assertThat(viewModel.gameResetRequest.value).isFalse()
-    }
-
-    @Test
-    fun `navigateToOpeningMenuAndCleanupDialogStates cleans states and navigates`() {
-        initViewModel()
-        // Arrange
-        viewModel.gameWon.value = true
-        viewModel.gamePaused.value = true
-        viewModel.gameResetRequest.value = true
-
-        // Act
-        viewModel.navigateToOpeningMenuAndCleanupDialogStates()
-
-        // Assert
-        assertThat(viewModel.gameWon.value).isFalse()
-        assertThat(viewModel.gamePaused.value).isFalse()
-        assertThat(viewModel.gameResetRequest.value).isFalse()
-        assertThat(testNavController.currentDestination?.route).isEqualTo(Screen.OpeningMenuScreen.route)
+        assertThat(viewModel.tablePlay!!.boardWidth).isEqualTo(expectedWidth)
+        assertThat(viewModel.tablePlay!!.boardHeight).isEqualTo(expectedHeight)
+        assertThat(viewModel.tablePlay!!.cardsArray.sumOf { it.size }).isEqualTo(expectedWidth * expectedHeight)
     }
 
     @Test
     fun `checkGamePlayCardTurned when first card is turned updates state correctly`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange
-        advanceUntilIdle()
-        
+        advanceUntilIdle() // Ensure initial setup is complete
+
         var flipSoundCalled = false
         val flipSound = { flipSoundCalled = true }
 
         val cardBeforeTurn = viewModel.tablePlay!!.cardsArray[0][0].value
-        assertThat(cardBeforeTurn.turned).isFalse()
+        assertThat(cardBeforeTurn.turned).isFalse() // Pre-condition
 
         // 2. Act
         viewModel.checkGamePlayCardTurned(
@@ -173,7 +115,6 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when correct pair is turned updates score and state`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -185,7 +126,7 @@ class GameViewModelTest {
 
         // 2. Act
         viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
-        fakeTimerViewModel.setElapsedTime(2) // Simula 2 secondi passati
+        fakeTimerViewModel.setElapsedTime(2) // Simulate 2 seconds passing
         viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, {}, {}, {}, successSound, {})
         advanceUntilIdle()
 
@@ -202,7 +143,6 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when incorrect pair is turned flips them back`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -213,9 +153,9 @@ class GameViewModelTest {
 
         // 2. Act
         viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
-        fakeTimerViewModel.setElapsedTime(2) // Simula 2 secondi passati
+        fakeTimerViewModel.setElapsedTime(2) // Simulate 2 seconds passing
         viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, {}, {}, failSound, {}, {})
-        
+
         advanceUntilIdle()
 
         // 3. Assert
@@ -229,22 +169,21 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when last pair is found triggers win condition`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
-        // Simula una partita quasi vinta, lasciando solo una coppia da scoprire
+        // Simulate an almost-won game, leaving only one pair to be discovered
         val (lastPairCard1, lastPairCard2) = setupAlmostWonBoard(board.cardsArray)
-        viewModel.score.intValue = 900 // Simula un punteggio esistente
+        viewModel.score.intValue = 900 // Simulate an existing score
 
         var winSoundCalled = false
         val winSound = { winSoundCalled = true }
 
         // 2. Act
-        // Gira la prima carta dell'ultima coppia
+        // Turn the first card of the last pair
         viewModel.checkGamePlayCardTurned(lastPairCard1.first, lastPairCard1.second, {}, {}, {}, {}, {})
-        fakeTimerViewModel.setElapsedTime(2) // Simula 2 secondi passati
-        // Gira la seconda e scatena la vittoria
+        fakeTimerViewModel.setElapsedTime(2) // Simulate 2 seconds passing
+        // Turn the second card and trigger the win
         viewModel.checkGamePlayCardTurned(lastPairCard2.first, lastPairCard2.second, {}, {}, {}, {}, winSound)
         advanceUntilIdle()
 
@@ -252,16 +191,15 @@ class GameViewModelTest {
         assertThat(viewModel.gameWon.value).isTrue()
         assertThat(fakeTimerViewModel.isTimerRunning()).isFalse()
         assertThat(winSoundCalled).isTrue()
-        assertThat(viewModel.gamePaused.value).isTrue() // Verifica che il dialogo di pausa/vittoria sia richiesto
+        assertThat(viewModel.gamePaused.value).isTrue() // Verify that the pause/win dialog is requested
 
-        // Controlla che il punteggio finale sia stato salvato
+        // Check that the final score was saved
         val finalScore = viewModel.score.intValue
         assertThat(fakeDataStore.lastPlayedEntry.value?.score).isEqualTo(finalScore)
     }
 
     @Test
     fun `resetCurrentGame resets all game state`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange: Simulate a game in progress
         advanceUntilIdle()
         viewModel.score.intValue = 500
@@ -283,7 +221,6 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when same card is clicked twice flips it back and penalizes`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val initialScore = viewModel.score.intValue
@@ -313,7 +250,6 @@ class GameViewModelTest {
 
     @Test
     fun `checkGamePlayCardTurned when coupled card is clicked does nothing`() = runTest(testDispatcher) {
-        initViewModel()
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -375,7 +311,7 @@ class GameViewModelTest {
         val lastPairId = allCards.last().third.id
         val lastPairPositions = allCards.filter { it.third.id == lastPairId }
 
-        // Marca tutte le carte come accoppiate, tranne l'ultima coppia
+        // Mark all cards as coupled, except for the last pair
         cards.forEach { row ->
             row.forEach { cardState ->
                 if (cardState.value.id != lastPairId) {

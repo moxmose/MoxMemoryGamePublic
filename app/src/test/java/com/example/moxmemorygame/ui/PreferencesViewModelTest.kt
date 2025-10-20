@@ -18,7 +18,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -154,29 +153,29 @@ class PreferencesViewModelTest {
 
     @Test
     fun `updateCardSelection modifies only temp state`() = runTest(testDispatcher) {
-        // 1. Arrange: Crea uno stato iniziale VALIDO
+        // 1. Arrange: Create a valid initial state
         initViewModel()
-        val minRequired = (3 * 4) / 2 // 6 carte per una griglia 3x4
+        val minRequired = (3 * 4) / 2 // 6 cards for a 3x4 grid
         fakeDataStore.saveBoardDimensions(3, 4)
         val initialCards = (1..minRequired).map { "img_c_%02d".format(it) }.toSet()
         fakeDataStore.saveSelectedCards(initialCards)
 
         advanceUntilIdle()
-        viewModel.prepareForCardSelection() // Popola lo stato temporaneo
+        viewModel.prepareForCardSelection() // Populate temp state
 
-        // Verifica che l'init non abbia sovrascritto i dati
+        // Verify that init didn't overwrite the data
         assertThat(viewModel.selectedCards.value).isEqualTo(initialCards)
         assertThat(viewModel.tempSelectedCards.value).isEqualTo(initialCards)
-        
-        // 2. Act: Aggiungi una carta
+
+        // 2. Act: Add a card
         val newCard = "img_c_99"
         viewModel.updateCardSelection(newCard, isSelected = true)
 
-        // 3. Assert: Verifica che solo lo stato temporaneo sia cambiato
+        // 3. Assert: Verify that only the temp state has changed
         val expectedTempCards = initialCards + newCard
         assertThat(viewModel.tempSelectedCards.value).isEqualTo(expectedTempCards)
-        
-        // Verifica che il DataStore (e il flow collegato) NON sia stato modificato
+
+        // Verify that the DataStore (and the connected flow) was NOT modified
         assertThat(fakeDataStore.selectedCards.value).isEqualTo(initialCards)
     }
 
@@ -186,22 +185,22 @@ class PreferencesViewModelTest {
         initViewModel()
         val minRequired = (3 * 4) / 2 // 6
         fakeDataStore.saveBoardDimensions(3, 4)
-        fakeDataStore.saveSelectedCards(setOf("img_c_01")) // Stato iniziale volutamente non valido
+        fakeDataStore.saveSelectedCards(setOf("img_c_01")) // Intentionally invalid initial state
 
         advanceUntilIdle()
         viewModel.prepareForCardSelection()
 
-        // Pulisci lo stato temporaneo (che era stato inquinato dai valori di default)
+        // Clear the temp state (which was polluted by default values)
         viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), selectAll = false)
         assertThat(viewModel.tempSelectedCards.value).isEmpty()
 
         val validSelection = (1..minRequired).map { "img_c_%02d".format(it) }.toSet()
-        validSelection.forEach { viewModel.updateCardSelection(it, true) } // Crea una selezione valida
+        validSelection.forEach { viewModel.updateCardSelection(it, true) } // Create a valid selection
         assertThat(viewModel.tempSelectedCards.value).hasSize(minRequired)
 
         // 2. Act
         viewModel.confirmCardSelections()
-        advanceUntilIdle() // Attendi il completamento della coroutine di salvataggio
+        advanceUntilIdle() // Wait for the save coroutine to complete
 
         // 3. Assert
         assertThat(fakeDataStore.selectedCards.value).isEqualTo(validSelection)
@@ -220,9 +219,9 @@ class PreferencesViewModelTest {
         advanceUntilIdle()
         viewModel.prepareForCardSelection()
 
-        val invalidSelection = setOf("img_s_01", "img_s_02") // Solo 2 carte
-        viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), false) // Deseleziona tutto
-        invalidSelection.forEach { viewModel.updateCardSelection(it, true) } // Seleziona le 2 carte
+        val invalidSelection = setOf("img_s_01", "img_s_02") // Only 2 cards
+        viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), false) // Deselect all
+        invalidSelection.forEach { viewModel.updateCardSelection(it, true) } // Select the 2 cards
         assertThat(viewModel.tempSelectedCards.value).isEqualTo(invalidSelection)
 
         // 2. Act
@@ -231,12 +230,12 @@ class PreferencesViewModelTest {
 
         // 3. Assert
         assertThat(viewModel.cardSelectionError.value).isNotNull()
-        assertThat(fakeDataStore.selectedCards.value).isEqualTo(initialCards) // Deve rimanere lo stato iniziale
+        assertThat(fakeDataStore.selectedCards.value).isEqualTo(initialCards) // Must remain in the initial state
     }
 
     @Test
     fun `updateBoardDimensions when valid saves and clears error`() = runTest(testDispatcher) {
-        // 1. Arrange: Partiamo da una griglia grande con abbastanza carte
+        // 1. Arrange: start from a grid large with enough cards
         initViewModel()
         val initialWidth = 4
         val initialHeight = 5
@@ -248,9 +247,9 @@ class PreferencesViewModelTest {
 
         advanceUntilIdle()
 
-        // 2. Act: Riduciamo a una dimensione più piccola ma valida
+        // 2. Act: Reduce to a smaller but valid size
         val newWidth = 3
-        val newHeight = 4 // Richiede 6 carte, la nostra selezione di 10 è sufficiente
+        val newHeight = 4 // Requires 6 cards, our selection of 10 is sufficient
         viewModel.updateBoardDimensions(newWidth, newHeight)
         advanceUntilIdle()
 
@@ -274,15 +273,15 @@ class PreferencesViewModelTest {
 
         advanceUntilIdle()
 
-        // 2. Act: Prova a impostare dimensioni che richiedono più carte di quelle selezionate
+        // 2. Act: Try to set dimensions that require more cards than selected
         val newWidth = 5
-        val newHeight = 4 // Richiede 10 carte, ma ne abbiamo solo 6
+        val newHeight = 4 // Requires 10 cards, but we only have 6
         viewModel.updateBoardDimensions(newWidth, newHeight)
         advanceUntilIdle()
 
         // 3. Assert
         assertThat(viewModel.boardDimensionError.value).isNotNull()
-        // Verifica che le dimensioni NON siano state salvate
+        // Verify that dimensions were NOT saved
         assertThat(fakeDataStore.selectedBoardWidth.value).isEqualTo(initialWidth)
         assertThat(fakeDataStore.selectedBoardHeight.value).isEqualTo(initialHeight)
     }
@@ -297,7 +296,7 @@ class PreferencesViewModelTest {
         advanceUntilIdle()
 
         // 2. Act
-        viewModel.updateBoardDimensions(3, 2) // Altezza 2 < MIN_BOARD_HEIGHT (4)
+        viewModel.updateBoardDimensions(3, 2) // Height 2 < MIN_BOARD_HEIGHT (4)
         advanceUntilIdle()
 
         // 3. Assert
@@ -315,7 +314,7 @@ class PreferencesViewModelTest {
         advanceUntilIdle()
 
         // 2. Act
-        viewModel.updateBoardDimensions(3, 5) // 3 * 5 = 15 (dispari)
+        viewModel.updateBoardDimensions(3, 5) // 3 * 5 = 15 (odd)
         advanceUntilIdle()
 
         // 3. Assert
@@ -374,10 +373,10 @@ class PreferencesViewModelTest {
 
         // 2. Act
         val newSelection = setOf("background_02", "background_05")
-        // Prima aggiungi, poi rimuovi, per evitare di deselezionare l'ultimo elemento
+        // First add, then remove, to avoid deselecting the last one
         viewModel.updateBackgroundSelection("background_02", true)
         viewModel.updateBackgroundSelection("background_05", true)
-        viewModel.updateBackgroundSelection("background_00", false) 
+        viewModel.updateBackgroundSelection("background_00", false)
 
         assertThat(viewModel.selectedBackgrounds.value).isEqualTo(newSelection)
         assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(initialSelection)
@@ -422,12 +421,12 @@ class PreferencesViewModelTest {
         // 3. Assert
         assertThat(fakeDataStore.playerName.value).isEqualTo(initialName)
     }
-    
+
     @Test
     fun `getCardDisplayName returns formatted name`() = runTest(testDispatcher) {
         // Arrange
         initViewModel()
-        
+
         // Act & Assert
         val refinedName = viewModel.getCardDisplayName("img_c_05")
         assertThat(refinedName).isEqualTo("Refined 5")
@@ -446,7 +445,7 @@ class PreferencesViewModelTest {
         fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
         advanceUntilIdle()
         viewModel.prepareForCardSelection()
-        // Pulisci lo stato e crea una selezione invalida
+        // Clean the state and create an invalid selection
         viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), false)
         viewModel.updateCardSelection("img_c_01", true) // select only 1 card
         viewModel.confirmCardSelections()
