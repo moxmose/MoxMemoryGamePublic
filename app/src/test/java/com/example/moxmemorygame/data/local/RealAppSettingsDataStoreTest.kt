@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -29,7 +28,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 @ExperimentalCoroutinesApi
@@ -41,7 +39,7 @@ class RealAppSettingsDataStoreTest {
     private lateinit var testDataStore: DataStore<Preferences>
     private lateinit var appSettingsDataStore: RealAppSettingsDataStore
 
-    private val TEST_DATASTORE_NAME = "test_datastore"
+    private val testDatastoreName = "test_datastore"
 
     private object Keys {
         val PLAYER_NAME = stringPreferencesKey("player_name")
@@ -60,7 +58,7 @@ class RealAppSettingsDataStoreTest {
         testContext = ApplicationProvider.getApplicationContext()
         testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { testContext.preferencesDataStoreFile(TEST_DATASTORE_NAME) }
+            produceFile = { testContext.preferencesDataStoreFile(testDatastoreName) }
         )
         appSettingsDataStore = RealAppSettingsDataStore(testDataStore)
     }
@@ -69,14 +67,14 @@ class RealAppSettingsDataStoreTest {
     fun tearDown() {
         testScope.cancel()
         stopKoin() // Stop Koin to avoid conflicts between test classes
-        val datastoreFile = testContext.filesDir.resolve("datastore/$TEST_DATASTORE_NAME.preferences_pb")
+        val datastoreFile = testContext.filesDir.resolve("datastore/$testDatastoreName.preferences_pb")
         if (datastoreFile.exists()) {
             datastoreFile.delete()
         }
     }
 
     @Test
-    fun `savePlayerName saves the name correctly`() = testScope.runTest {
+    fun savePlayerName_savesNameCorrectly() = testScope.runTest {
         val playerName = "TestPlayer"
 
         appSettingsDataStore.savePlayerName(playerName)
@@ -87,7 +85,7 @@ class RealAppSettingsDataStoreTest {
     }
 
     @Test
-    fun `saveSelectedCards saves the card set correctly`() = testScope.runTest {
+    fun saveSelectedCards_savesCardSetCorrectly() = testScope.runTest {
         val cards = setOf("img_c_01", "img_c_02", "img_s_05")
 
         appSettingsDataStore.saveSelectedCards(cards)
@@ -98,7 +96,7 @@ class RealAppSettingsDataStoreTest {
     }
 
     @Test
-    fun `saveSelectedBackgrounds saves the background set correctly`() = testScope.runTest {
+    fun saveSelectedBackgrounds_savesBackgroundSetCorrectly() = testScope.runTest {
         val backgrounds = setOf("background_01", "background_03")
 
         appSettingsDataStore.saveSelectedBackgrounds(backgrounds)
@@ -109,7 +107,7 @@ class RealAppSettingsDataStoreTest {
     }
 
     @Test
-    fun `saveBoardDimensions saves width and height correctly`() = testScope.runTest {
+    fun saveBoardDimensions_savesWidthAndHeightCorrectly() = testScope.runTest {
         val width = 4
         val height = 5
 
@@ -123,7 +121,7 @@ class RealAppSettingsDataStoreTest {
     }
 
     @Test
-    fun `saveIsFirstTimeLaunch saves the boolean flag correctly`() = testScope.runTest {
+    fun saveIsFirstTimeLaunch_savesBooleanFlagCorrectly() = testScope.runTest {
         val isFirstTime = false
 
         appSettingsDataStore.saveIsFirstTimeLaunch(isFirstTime)
@@ -134,7 +132,7 @@ class RealAppSettingsDataStoreTest {
     }
 
     @Test
-    fun `saveScore saves last entry and updates ranking`() = testScope.runTest {
+    fun saveScore_savesLastEntryAndUpdatesRanking() = testScope.runTest {
         val player1 = "Player1"
         val score1 = 100
         val player2 = "Player2"

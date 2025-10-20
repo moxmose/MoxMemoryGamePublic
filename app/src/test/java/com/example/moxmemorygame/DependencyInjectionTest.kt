@@ -16,32 +16,31 @@ import org.mockito.Mockito
 @RunWith(AndroidJUnit4::class)
 class DependencyInjectionTest : KoinTest {
 
-    // This is the direct answer to the error "Missing MockProvider".
-    // We register a Mockito-based provider before the test runs.
     @Before
     fun setup() {
+        // Register a Mockito-based MockProvider to allow Koin's `checkModules`
+        // to create mock instances for definitions with unresolved parameters.
         MockProvider.register { clazz ->
             Mockito.mock(clazz.java)
         }
     }
 
     @Test
-    fun `check all koin modules`() {
-        // CRUCIAL: Stop any Koin instance that might have been started by the Application class
-        // which is instantiated by Robolectric. This ensures `checkModules` starts clean.
+    fun verifiesKoinModules() {
+        // Stop any Koin instance started by the Application class (via Robolectric)
+        // to ensure `checkModules` can start its own clean Koin application.
         stopKoin()
 
-        // we can now run checkModules. It will start its own temporary Koin application.
-        // When it encounters a definition it cannot resolve, it will use the registered MockProvider.
+        // `checkModules` verifies that all definitions in the provided modules can be resolved.
         checkModules {
             androidContext(ApplicationProvider.getApplicationContext())
             modules(appModules)
         }
     }
 
-    // It's good practice to stop Koin after the test class finishes.
     @After
     fun tearDown() {
+        // Stop Koin after the test to leave a clean state for subsequent tests.
         stopKoin()
     }
 }
