@@ -60,7 +60,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `init when selected cards are insufficient loads default cards`() = runTest(testDispatcher) {
+    fun init_whenSelectedCardsAreInsufficient_loadsDefaultCards() = runTest(testDispatcher) {
         // Arrange
         val boardWidth = 4
         val boardHeight = 6 // Requires 12 cards
@@ -79,7 +79,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `onBackToMainMenuClicked waits for save jobs then navigates`() = runTest(testDispatcher) {
+    fun onBackToMainMenuClicked_waitsForSaveJobs_thenNavigates() = runTest(testDispatcher) {
         // Arrange
         initViewModel()
         fakeDataStore.setSaveDelay(2000) // Mock a long save operation
@@ -101,7 +101,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when width is below min sets error`() = runTest(testDispatcher) {
+    fun updateBoardDimensions_whenWidthIsBelowMin_setsError() = runTest(testDispatcher) {
         // Arrange
         initViewModel()
         advanceUntilIdle()
@@ -116,7 +116,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when height is above max sets error`() = runTest(testDispatcher) {
+    fun updateBoardDimensions_whenHeightIsAboveMax_setsError() = runTest(testDispatcher) {
         // Arrange
         initViewModel()
         advanceUntilIdle()
@@ -132,7 +132,7 @@ class PreferencesViewModelTest {
 
 
     @Test
-    fun `toggleSelectAllBackgrounds when deselecting all falls back to first selected`() = runTest(testDispatcher) {
+    fun toggleSelectAllBackgrounds_whenDeselectingAll_fallsBackToFirstSelected() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialSelection = setOf("background_02", "background_04", "background_00")
@@ -152,7 +152,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateCardSelection modifies only temp state`() = runTest(testDispatcher) {
+    fun updateCardSelection_modifiesOnlyTempState() = runTest(testDispatcher) {
         // 1. Arrange: Create a valid initial state
         initViewModel()
         val minRequired = (3 * 4) / 2 // 6 cards for a 3x4 grid
@@ -180,7 +180,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `confirmCardSelections when selection is valid saves to DataStore`() = runTest(testDispatcher) {
+    fun confirmCardSelections_whenSelectionIsValid_savesToDataStore() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val minRequired = (3 * 4) / 2 // 6
@@ -208,7 +208,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `confirmCardSelections when selection is invalid does not save and sets error`() = runTest(testDispatcher) {
+    fun confirmCardSelections_whenSelectionIsInvalid_doesNotSaveAndSetsError() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val minRequired = (4 * 5) / 2 // 10
@@ -234,7 +234,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when valid saves and clears error`() = runTest(testDispatcher) {
+    fun updateBoardDimensions_whenValid_savesAndClearsError() = runTest(testDispatcher) {
         // 1. Arrange: start from a grid large with enough cards
         initViewModel()
         val initialWidth = 4
@@ -260,7 +260,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when invalid does not save and sets error`() = runTest(testDispatcher) {
+    fun updateBoardDimensions_whenInvalid_doesNotSaveAndSetsError() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialWidth = 3
@@ -287,7 +287,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when height is below min does not save and sets error`() = runTest(testDispatcher) {
+    fun updateBoardDimensions_whenHeightIsBelowMin_doesNotSaveAndSetsError() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialWidth = 3
@@ -305,7 +305,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBoardDimensions when cell count is odd does not save and sets error`() = runTest(testDispatcher) {
+    fun updateBoardDimensions_whenCellCountIsOdd_doesNotSaveAndSetsError() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialWidth = 3
@@ -324,7 +324,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `toggleSelectAllBackgrounds when selecting all selects all`() = runTest(testDispatcher) {
+    fun toggleSelectAllBackgrounds_whenSelectingAll_selectsAll() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialSelection = setOf("background_00")
@@ -341,7 +341,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updateBackgroundSelection when deselecting last one is ignored`() = runTest(testDispatcher) {
+    fun updateBackgroundSelection_whenDeselectingLastOne_isIgnored() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialSelection = setOf("background_01")
@@ -360,7 +360,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `confirmBackgroundSelections saves to DataStore`() = runTest(testDispatcher) {
+    fun confirmBackgroundSelections_savesToDataStore() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialSelection = setOf("background_00")
@@ -389,7 +389,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updatePlayerName when name is valid saves to DataStore`() = runTest(testDispatcher) {
+    fun updatePlayerName_whenNameIsValid_savesToDataStore() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialName = "Player1"
@@ -406,7 +406,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `updatePlayerName when name is too long is ignored`() = runTest(testDispatcher) {
+    fun updatePlayerName_whenNameIsTooLong_isIgnored() = runTest(testDispatcher) {
         // 1. Arrange
         initViewModel()
         val initialName = "Player1"
@@ -423,7 +423,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `getCardDisplayName returns formatted name`() = runTest(testDispatcher) {
+    fun getCardDisplayName_returnsFormattedName() = runTest(testDispatcher) {
         // Arrange
         initViewModel()
 
@@ -439,7 +439,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `clearCardSelectionError clears the error`() = runTest(testDispatcher) {
+    fun clearCardSelectionError_clearsTheError() = runTest(testDispatcher) {
         // Arrange: first, create an error state
         initViewModel()
         fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
@@ -459,7 +459,7 @@ class PreferencesViewModelTest {
     }
 
     @Test
-    fun `clearBoardDimensionError clears the error`() = runTest(testDispatcher) {
+    fun clearBoardDimensionError_clearsTheError() = runTest(testDispatcher) {
         // Arrange: first, create an error state
         initViewModel()
         val initialWidth = 3
