@@ -17,13 +17,12 @@ import org.koin.core.context.GlobalContext
 fun NavGraph(
     innerPadding: PaddingValues,
     navController: NavHostController = rememberNavController(),
-
 ) {
-    // get the koin instance from the Koin Global Context
+    // Retrieve the Koin instance from the Global Context.
     val koin = GlobalContext.get()
-    // get the NavigationManager from the Koin instance
+    // Retrieve the singleton NavigationManager from Koin.
     val navigationManager: NavigationManager = koin.get()
-    // tell to NavigationManager to use the navController
+    // Set the NavController in the NavigationManager to enable decoupled navigation.
     navigationManager.setNavController(navController)
 
     NavHost(
@@ -32,22 +31,19 @@ fun NavGraph(
     ) {
         composable(Screen.OpeningMenuScreen.route) {
             val viewModel: OpeningMenuViewModel = koinViewModel {
-                    parametersOf(navController) }
+                parametersOf(navController)
+            }
             OpeningMenuScreen(viewModel, innerPadding)
         }
 
         composable(Screen.PreferencesScreen.route) {
-//            TestPreferencesScreen(navController = navController, innerPadding = innerPadding)
             val viewModel: PreferencesViewModel = koinViewModel { parametersOf(navController) }
-            PreferencesScreen(  preferencesViewModel = viewModel  , innerPadding = innerPadding)
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = innerPadding)
         }
 
         composable(Screen.GameScreen.route) {
             val viewModel: GameViewModel = koinViewModel { parametersOf(navController) }
-            GameScreen(gameViewModel = viewModel, //navController,
-                innerPadding = innerPadding)
-            //TestGameScreen(navController = navController, innerPadding = innerPadding)
+            GameScreen(gameViewModel = viewModel, innerPadding = innerPadding)
         }
     }
-
 }

@@ -34,7 +34,7 @@ fun ShowTablePlay(
 ) {
     if (gameCardImages.isEmpty() && (xDim * yDim > 0)) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Error: Card images not loaded for ShowTablePlay.", color = MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.game_error_images_not_loaded), color = MaterialTheme.colorScheme.error)
         }
         return
     }

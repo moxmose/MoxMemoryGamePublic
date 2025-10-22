@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class PreferencesViewModel(
     private val navController: NavHostController,
-    val appSettingsDataStore: IAppSettingsDataStore // Reso pubblico per accesso diretto dalla UI
+    val appSettingsDataStore: IAppSettingsDataStore // Made public for direct access from the UI
 ) : ViewModel() {
 
     val playerName: StateFlow<String> = appSettingsDataStore.playerName
@@ -26,8 +26,8 @@ class PreferencesViewModel(
     private var backgroundSelectionFallback: String? = null
 
     val availableCardResourceNames: List<String> = buildList {
-        (0..19).forEach { add("img_c_%02d".format(it)) } // 20 carte "refined"
-        (0..9).forEach { add("img_s_%02d".format(it)) }  // 10 carte "simple"
+        (0..19).forEach { add("img_c_%02d".format(it)) } // 20 "refined" cards
+        (0..9).forEach { add("img_s_%02d".format(it)) }  // 10 "simple" cards
     }
 
     val selectedCards: StateFlow<Set<String>> = appSettingsDataStore.selectedCards
@@ -92,7 +92,7 @@ class PreferencesViewModel(
         if (isSelected) {
             currentSelection.add(backgroundName)
         } else {
-            if (currentSelection.size > 1) { // Impedisce la deselezione dell'ultimo elemento
+            if (currentSelection.size > 1) { // Prevents deselection of the last item
                 currentSelection.remove(backgroundName)
             }
         }

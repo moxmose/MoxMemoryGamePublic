@@ -75,7 +75,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `initial state is correct`() = runTest(testDispatcher) {
+    fun initial_state_is_correct() = runTest(testDispatcher) {
         advanceUntilIdle()
 
         val expectedWidth = IAppSettingsDataStore.DEFAULT_BOARD_WIDTH
@@ -91,7 +91,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `checkGamePlayCardTurned when first card is turned updates state correctly`() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurned_whenFirstCardIsTurned_updatesStateCorrectly() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle() // Ensure initial setup is complete
 
@@ -114,7 +114,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `checkGamePlayCardTurned when correct pair is turned updates score and state`() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurned_whenCorrectPairIsTurned_updatesScoreAndState() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -142,7 +142,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `checkGamePlayCardTurned when incorrect pair is turned flips them back`() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurned_whenIncorrectPairIsTurned_flipsThemBack() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -168,7 +168,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `checkGamePlayCardTurned when last pair is found triggers win condition`() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurned_whenLastPairIsFound_triggersWinCondition() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
@@ -199,7 +199,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `resetCurrentGame resets all game state`() = runTest(testDispatcher) {
+    fun resetCurrentGame_resetsAllGameState() = runTest(testDispatcher) {
         // 1. Arrange: Simulate a game in progress
         advanceUntilIdle()
         viewModel.score.intValue = 500
@@ -220,7 +220,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `checkGamePlayCardTurned when same card is clicked twice flips it back and penalizes`() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurned_whenSameCardIsClickedTwice_flipsItBackAndPenalizes() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val initialScore = viewModel.score.intValue
@@ -249,7 +249,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `checkGamePlayCardTurned when coupled card is clicked does nothing`() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurned_whenCoupledCardIsClicked_doesNothing() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!

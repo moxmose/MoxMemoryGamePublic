@@ -83,7 +83,7 @@ fun PreferencesScreen(
     val selectedBackgroundsFromVM by preferencesViewModel.selectedBackgrounds.collectAsState()
     val availableBackgrounds = preferencesViewModel.availableBackgrounds
 
-    // Usa lo stato temporaneo per la UI del dialogo
+    // Use temp state for the dialog UI
     val tempSelectedCards by preferencesViewModel.tempSelectedCards.collectAsState()
     val selectedCardsFromDataStore by preferencesViewModel.selectedCards.collectAsState()
 
@@ -145,11 +145,11 @@ fun PreferencesScreen(
         availableCardResourceNames.filter { it.startsWith("img_s_") }
     }
 
-    // Conteggi per la UI principale (basati sullo stato salvato)
+    // Counts for the main UI (based on the saved state)
     val refinedCountFromDataStore = selectedCardsFromDataStore.count { it.startsWith("img_c_") }
     val simpleCountFromDataStore = selectedCardsFromDataStore.count { it.startsWith("img_s_") }
 
-    // Conteggi per i dialoghi (basati sullo stato temporaneo e reattivi)
+    // Counts for the dialogs (based on the temporary and reactive state)
     val tempRefinedCount = tempSelectedCards.count { it.startsWith("img_c_") }
     val tempSimpleCount = tempSelectedCards.count { it.startsWith("img_s_") }
     
@@ -178,7 +178,7 @@ fun PreferencesScreen(
             showRefinedCardDialog = false 
         },
         cardResourceNames = refinedCardResourceNames,
-        selectedCards = tempSelectedCards, // Usa lo stato temporaneo
+        selectedCards = tempSelectedCards, // Use temp state
         onCardSelectionChanged = { cardName, isSelected ->
             preferencesViewModel.updateCardSelection(cardName, isSelected)
         },
@@ -197,7 +197,7 @@ fun PreferencesScreen(
             showSimpleCardDialog = false 
         },
         cardResourceNames = simpleCardResourceNames,
-        selectedCards = tempSelectedCards, // Usa lo stato temporaneo
+        selectedCards = tempSelectedCards, // Use temp state
         onCardSelectionChanged = { cardName, isSelected ->
             preferencesViewModel.updateCardSelection(cardName, isSelected)
         },
@@ -213,7 +213,7 @@ fun PreferencesScreen(
             .fillMaxSize()
             .padding(innerPadding),
     ) {
-        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds, modifier = Modifier.fillMaxSize()) // MODIFICATO
+        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds, modifier = Modifier.fillMaxSize()) // MODIFIED
         Column(modifier = Modifier.fillMaxSize()) { 
             Box(modifier = Modifier.weight(1f)) { 
                 LazyColumn(
@@ -241,10 +241,10 @@ fun PreferencesScreen(
                         OutlinedButton(
 
                             onClick = {
-                                // 1. PRIMA prepari il fallback nel ViewModel
+                                // 1. FIRST prepare the fallback in the ViewModel
                                 preferencesViewModel.prepareForBackgroundSelection()
 
-                                // 2. POI mostri il dialogo
+                                // 2. THEN show the dialog
                                 showBackgroundDialog = true
                                       },
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
@@ -325,14 +325,17 @@ fun PreferencesScreen(
 fun PreferencesScreenPreview() {
     // Fake ViewModel for preview
     val fakeDataStore = FakeAppSettingsDataStore()
+
+    // Pre-populate the datastore for the preview
+    LaunchedEffect(Unit) {
+        fakeDataStore.savePlayerName("Preview Player")
+        fakeDataStore.saveSelectedBackgrounds(setOf("background_01", "background_02"))
+    }
+
     val fakeViewModel = PreferencesViewModel(
         navController = rememberNavController(),
         appSettingsDataStore = fakeDataStore
     )
-
-    // A fake StateFlow for the preview
-    val _selectedBackgrounds = MutableStateFlow(setOf("background_01"))
-    val selectedBackgrounds: StateFlow<Set<String>> = _selectedBackgrounds.asStateFlow()
 
     MaterialTheme {
         PreferencesScreen(

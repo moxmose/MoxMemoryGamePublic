@@ -2,7 +2,7 @@ package com.example.moxmemorygame
 
 import android.util.Log
 import androidx.navigation.NavHostController
-// Import aggiunti/corretti per IAppSettingsDataStore e RealAppSettingsDataStore
+// Imports added/corrected for IAppSettingsDataStore and RealAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.data.local.RealAppSettingsDataStore
 import com.example.moxmemorygame.data.local.dataStore
@@ -24,15 +24,15 @@ val myAppModule = module {
         TimerViewModel()
     }
 
-    single<CoroutineScope>(named("ApplicationScope")) {CoroutineScope(SupervisorJob() + Dispatchers.Default)}
-    
+    single<CoroutineScope>(named("ApplicationScope")) { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
     single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext().dataStore, get(named("ApplicationScope"))) }
 
     viewModel { (navController: NavHostController) ->
         GameViewModel(
             navController = navController,
             timerViewModel = get(),
-            appSettingsDataStore = get(), // Questo get() ora riceverà l'istanza corretta
+            appSettingsDataStore = get(), // This get() will now receive the correct instance
             resourceNameToId = { resourceName ->
                 try {
                     androidContext().resources.getIdentifier(
@@ -42,7 +42,7 @@ val myAppModule = module {
                     )
                 } catch (e: Exception) {
                     Log.e("KoinDI", "Resource ID not found for: $resourceName", e)
-                    0 
+                    0
                 }
             }
         )
@@ -51,15 +51,15 @@ val myAppModule = module {
     viewModel { (navController: NavHostController) ->
         PreferencesViewModel(
             navController = navController,
-            appSettingsDataStore = get() // Anche questo get() riceverà l'istanza corretta
+            appSettingsDataStore = get() // This get() will also receive the correct instance
         )
     }
 
     viewModel { (navController: NavHostController) ->
         OpeningMenuViewModel(
             navController = navController,
-            appSettingsDataStore = get() // E anche questo
-            )
+            appSettingsDataStore = get() // And this one too
+        )
     }
 }
 

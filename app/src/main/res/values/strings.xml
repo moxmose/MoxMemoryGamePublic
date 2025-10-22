@@ -9,8 +9,8 @@
     <string name="opening_menu_last_game_title">LAST GAME</string>
 
     <!-- Common Formats -->
-    <string name="score_points_format">%1$d pts</string> <!-- Esempio: "123 pts" -->
-    <string name="rank_number_format">%1$d.</string> <!-- Esempio: "1." -->
+    <string name="score_points_format">%1$d pts</string> <!-- Example: "123 pts" -->
+    <string name="rank_number_format">%1$d.</string> <!-- Example: "1." -->
 
     <!-- PreferencesScreen -->
     <string name="preferences_screen_title">PREFERENCES</string>
@@ -27,6 +27,9 @@
     <string name="preferences_min_cards_required_info_part1">Minimum cards required in total</string>
     <string name="preferences_min_cards_required_info_part2">(%1$d / %2$d)</string>
     <string name="preferences_button_back_to_main_menu">BACK TO MAIN MENU</string>
+    <string name="preferences_board_width">Width: %1$d</string>
+    <string name="preferences_board_height">Height: %1$d</string>
+    <string name="preferences_board_current_size">Current Size: %1$dx%2$d</string>
 
     <!-- Card Types -->
     <string name="card_type_refined">Refined</string>
@@ -69,6 +72,8 @@
     <string name="game_error_board_null">Error: Board not available. Please reset.</string>
     <string name="game_dialog_finished_title">FINISHED!</string>
     <string name="game_dialog_finished_subtitle">GAME ENDED</string>
-
+    <string name="game_error_images_not_loaded">Error: Card images not loaded for ShowTablePlay.</string>
+    <string name="card_name_refined">Refined %1$s</string>
+    <string name="card_name_simple">Simple %1$s</string>
 
 </resources>

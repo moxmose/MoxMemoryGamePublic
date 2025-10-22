@@ -55,11 +55,11 @@ fun GameScreen(
             flipSound=flipSound, pauseSound=pauseSound, failSound=failSound,
             successSound=successSound, winSound=winSound) }
 
-    // Azioni per i pulsanti Pause e Reset nella UI (Tail)
+    // Actions for the Pause and Reset buttons in the UI (Tail)
     val onPauseClicked = { gameViewModel.requestPauseDialog(); pauseSound() }
     val onResetClicked = { gameViewModel.requestResetDialog(); pauseSound() } 
 
-    // Azioni per i dialoghi
+    // Actions for the dialogs
     val onDismissPauseDialog = { gameViewModel.dismissPauseDialog(); pauseSound() }
     val onCancelResetDialog = { gameViewModel.cancelResetDialog(); pauseSound() }
     val onConfirmAndNavigateToMenu = { gameViewModel.navigateToOpeningMenuAndCleanupDialogStates(); }

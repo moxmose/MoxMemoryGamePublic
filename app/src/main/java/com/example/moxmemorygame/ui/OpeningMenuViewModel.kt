@@ -2,14 +2,14 @@ package com.example.moxmemorygame.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavHostController
-// Import CORRETTO per IAppSettingsDataStore
+// Correct import for IAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.ScoreEntry
 import kotlinx.coroutines.flow.StateFlow
 
 class OpeningMenuViewModel(
     private val navController: NavHostController,
-    private val appSettingsDataStore: IAppSettingsDataStore // Ora userà la versione da data.local
+    private val appSettingsDataStore: IAppSettingsDataStore // Now uses the version from data.local
 ) : ViewModel() {
 
     // Navigation logic

@@ -43,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.moxmemorygame.R
+import java.util.Locale
 
 @Composable
 fun BackgroundSelectionDialog(
@@ -156,7 +157,7 @@ private fun BackgroundSelectionDialogContent(
                                         }
                                     )
                                     Text(
-                                        text = bgName.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                                        text = formatResourceName(bgName),
                                         modifier = Modifier.padding(start = 8.dp)
                                     )
                                 }
@@ -203,6 +204,12 @@ private fun BackgroundSelectionDialogContent(
             }
         }
     }
+}
+
+private fun formatResourceName(name: String): String {
+    return name
+        .replace("_", " ")
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 }
 
 

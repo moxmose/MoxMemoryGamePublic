@@ -29,7 +29,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.IOException
 
-// La creazione del DataStore viene lasciata al dependency injector (es. Koin)
+// The creation of the DataStore is left to the dependency injector (e.g., Koin)
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
 
 class RealAppSettingsDataStore(

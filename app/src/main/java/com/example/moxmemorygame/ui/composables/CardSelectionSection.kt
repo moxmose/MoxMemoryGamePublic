@@ -21,7 +21,7 @@ import com.example.moxmemorygame.R
 
 @Composable
 fun CardSelectionSection(
-    modifier: Modifier = Modifier, // Aggiunto modifier
+    modifier: Modifier = Modifier, // Added modifier
     selectedRefinedCount: Int,
     refinedCardResourceNames: List<String>,
     selectedSimpleCount: Int,
@@ -32,7 +32,7 @@ fun CardSelectionSection(
     onSimpleClick: () -> Unit
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(), // Applicato modifier
+        modifier = modifier.fillMaxWidth(), // Applied modifier
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(

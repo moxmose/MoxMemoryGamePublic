@@ -3,7 +3,6 @@ package com.example.moxmemorygame.ui.composables
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -18,7 +17,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun BoardDimensionsSection(
-    modifier: Modifier = Modifier, // Aggiunto modifier
+    modifier: Modifier = Modifier, 
     tempSliderWidth: Float,
     tempSliderHeight: Float,
     currentBoardWidth: Int,
@@ -30,7 +29,7 @@ fun BoardDimensionsSection(
     onHeightChangeFinished: () -> Unit
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(), // Applicato modifier
+        modifier = modifier.fillMaxWidth(), 
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
@@ -41,7 +40,7 @@ fun BoardDimensionsSection(
         )
 
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text("Width: ${tempSliderWidth.roundToInt()}", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.preferences_board_width, tempSliderWidth.roundToInt()), style = MaterialTheme.typography.bodyLarge)
             Slider(
                 value = tempSliderWidth,
                 onValueChange = onWidthChange,
@@ -53,7 +52,7 @@ fun BoardDimensionsSection(
         }
 
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text("Height: ${tempSliderHeight.roundToInt()}", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.preferences_board_height, tempSliderHeight.roundToInt()), style = MaterialTheme.typography.bodyLarge)
             Slider(
                 value = tempSliderHeight,
                 onValueChange = onHeightChange,
@@ -64,7 +63,7 @@ fun BoardDimensionsSection(
             )
         }
         Text(
-            text = "Current Size: ${currentBoardWidth}x${currentBoardHeight}", 
+            text = stringResource(R.string.preferences_board_current_size, currentBoardWidth, currentBoardHeight), 
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center

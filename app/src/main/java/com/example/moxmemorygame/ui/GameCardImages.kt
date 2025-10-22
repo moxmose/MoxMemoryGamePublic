@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import com.example.moxmemorygame.R
 
 data class GameCardImages (
-    @param:DrawableRes //@DrawableRes
+    @DrawableRes
     val image: List<Int> = listOf(
         R.drawable.img_s_00,
         R.drawable.img_s_01,
@@ -19,4 +19,4 @@ data class GameCardImages (
     )
 )
 
-// La classe "class GameCardImage" è stata rimossa perché non utilizzata.
+// The "class GameCardImage" was removed because it was unused.

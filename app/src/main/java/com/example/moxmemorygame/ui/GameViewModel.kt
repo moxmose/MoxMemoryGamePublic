@@ -85,7 +85,7 @@ class GameViewModel(
                 lastMove = noLastMove
                 cardInPlay = false
                 _gamePlayResetSound.value = true
-                // Questi stati sono cruciali per i dialoghi, assicurati che siano puliti dopo un reset completo.
+                // These states are crucial for dialogs, make sure they are clean after a full reset.
                 gamePaused.value = false
                 gameResetRequest.value = false
                 gameWon.value = false 
@@ -152,12 +152,12 @@ class GameViewModel(
         }
     }
 
-    // Chiamata dal GameWonDialog e dalla conferma del ResetDialog per tornare al menu
+    // Called from GameWonDialog and ResetDialog confirmation to go back to the menu
     fun navigateToOpeningMenuAndCleanupDialogStates() {
         Log.d("GameVM", "navigateToOpeningMenuAndCleanupDialogStates - Cleaning dialog states and navigating.")
         gamePaused.value = false
         gameResetRequest.value = false
-        gameWon.value = false // Assicura che lo stato di vittoria sia resettato
+        gameWon.value = false // Ensures the win state is reset
         navController.navigate(Screen.OpeningMenuScreen.route) {
             popUpTo(navController.graph.startDestinationId) { inclusive = true }
             launchSingleTop = true
@@ -260,8 +260,8 @@ class GameViewModel(
                     if(checkAllCardsCoupled()) {
                         winSound()
                         gameWon.value = true
-                        timerViewModel.stopTimer() // MODIFICA: Ferma il timer qui
-                        requestPauseDialog() // Mostra GameWonDialog tramite gamePaused=true
+                        timerViewModel.stopTimer()
+                        requestPauseDialog() // Show GameWonDialog via gamePaused=true
                         viewModelScope.launch {
                             val pName = appSettingsDataStore.playerName.first()
                             val finalScore = _score.intValue 
@@ -313,38 +313,38 @@ class GameViewModel(
         cardState.value = cardValue.copy(turned = newTurnedState)
     }
 
-    // Chiamata dal pulsante Pausa o quando si vince
+    // Called by the Pause button or when the game is won
     fun requestPauseDialog() { 
         Log.d("GameVM", "requestPauseDialog - Setting gamePaused = true")
         gamePaused.value = true 
     }
 
-    // Chiamata dal pulsante Reset
+    // Called by the Reset button
     fun requestResetDialog() { 
         Log.d("GameVM", "requestResetDialog - Setting gamePaused = true, gameResetRequest = true")
         gamePaused.value = true
         gameResetRequest.value = true 
     }
 
-    // Chiamata per chiudere il PauseDialog
+    // Called to close the PauseDialog
     fun dismissPauseDialog() {
         Log.d("GameVM", "dismissPauseDialog - Setting gamePaused = false")
         gamePaused.value = false
-        // gameResetRequest dovrebbe essere già false, ma per sicurezza:
-        if (gameResetRequest.value && !gameWon.value) { // Non resettare se è un reset confermato o vinto
+        // gameResetRequest should already be false, but just in case:
+        if (gameResetRequest.value && !gameWon.value) { // Don't reset if it's a confirmed or won reset
             Log.w("GameVM", "dismissPauseDialog - gameResetRequest was true when dismissing pause. Check logic.")
-            // gameResetRequest.value = false // Opzionale: dipende dalla logica desiderata
+            // gameResetRequest.value = false // Optional: depends on the desired logic
         }
     }
 
-    // Chiamata per annullare il ResetDialog
+    // Called to cancel the ResetDialog
     fun cancelResetDialog() {
         Log.d("GameVM", "cancelResetDialog - Setting gamePaused = false, gameResetRequest = false")
         gamePaused.value = false
         gameResetRequest.value = false
     }
     
-    // Chiamata dal pulsante "Reset" nel menu di gioco, per resettare la partita corrente
+    // Called from the "Reset" button in the game menu to reset the current match
     fun resetCurrentGame() { 
         Log.d("GameVM", "resetCurrentGame - Calling resetGame() to restart current match.")
         resetGame() 
@@ -423,7 +423,7 @@ class GameViewModel(
         Log.d("GameVM_Score", "refreshPointsWrongCouple - Score: ${_score.intValue}, Time Penalty: $timePenaltyDeciPoints")
     }
     private fun refreshPointsRightCouple(timeDeltaInSeconds: Long) { 
-        val timeBonusDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = 3) // MODIFICATO
+        val timeBonusDeciPoints = calculateTimeEffectDeciPoints(timeDeltaInSeconds, effectRateInteger = 3) // MODIFIED
         val boardBonusDeciPoints = calculateBoardDifficultyDeciBonusPoints()
         _score.intValue = _score.intValue + timeBonusDeciPoints + boardBonusDeciPoints 
         Log.d("GameVM_Score", "refreshPointsRightCouple - Score: ${_score.intValue}, Time Bonus: $timeBonusDeciPoints, Board Bonus: $boardBonusDeciPoints")

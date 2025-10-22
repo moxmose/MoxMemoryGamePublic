@@ -54,11 +54,11 @@ import com.example.moxmemorygame.R
 fun CardSelectionDialog(
     showDialog: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit, // Nuovo parametro
+    onConfirm: () -> Unit,
     cardResourceNames: List<String>,
     selectedCards: Set<String>,
     onCardSelectionChanged: (String, Boolean) -> Unit,
-    onToggleSelectAll: (Boolean) -> Unit, 
+    onToggleSelectAll: (Boolean) -> Unit,
     minRequired: Int,
     title: String
 ) {
@@ -69,11 +69,11 @@ fun CardSelectionDialog(
         ) {
             CardSelectionDialogContent(
                 onDismiss = onDismiss,
-                onConfirm = onConfirm, // Passato al content
+                onConfirm = onConfirm,
                 cardResourceNames = cardResourceNames,
                 selectedCards = selectedCards,
                 onCardSelectionChanged = onCardSelectionChanged,
-                onToggleSelectAll = onToggleSelectAll, 
+                onToggleSelectAll = onToggleSelectAll,
                 minRequired = minRequired,
                 title = title
             )
@@ -84,11 +84,11 @@ fun CardSelectionDialog(
 @Composable
 private fun CardSelectionDialogContent(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit, // Nuovo parametro
+    onConfirm: () -> Unit,
     cardResourceNames: List<String>,
     selectedCards: Set<String>,
     onCardSelectionChanged: (String, Boolean) -> Unit,
-    onToggleSelectAll: (Boolean) -> Unit, 
+    onToggleSelectAll: (Boolean) -> Unit,
     minRequired: Int,
     title: String
 ) {
@@ -170,12 +170,10 @@ private fun CardSelectionDialogContent(
                                 context.resources.getIdentifier(cardName, "drawable", context.packageName)
                             }
 
-                            val displayName = remember(cardName) {
-                                when {
-                                    cardName.startsWith("img_c_") -> "Refined ${cardName.removePrefix("img_c_").replace("_", " ")}"
-                                    cardName.startsWith("img_s_") -> "Simple ${cardName.removePrefix("img_s_").replace("_", " ")}"
-                                    else -> cardName.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                                }
+                            val displayName = when {
+                                cardName.startsWith("img_c_") -> stringResource(R.string.card_name_refined, cardName.removePrefix("img_c_").removePrefix("0"))
+                                cardName.startsWith("img_s_") -> stringResource(R.string.card_name_simple, cardName.removePrefix("img_s_").removePrefix("0"))
+                                else -> cardName.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                             }
 
                             var isChecked by remember(selectedCards) { mutableStateOf(cardName in selectedCards) }
@@ -230,8 +228,8 @@ private fun CardSelectionDialogContent(
                 }
                 Spacer(Modifier.height(16.dp))
                 Button(
-                    onClick = onConfirm, 
-                    enabled = selectedCards.size >= minRequired, // Aggiunto controllo di abilitazione
+                    onClick = onConfirm,
+                    enabled = selectedCards.size >= minRequired, // Added enable check
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(
                         topStart = 16.dp,
@@ -296,8 +294,8 @@ fun CardSelectionDialogPreview() {
             onToggleSelectAll = { selectAll ->
                 selected = if (selectAll) selected + cardList.toSet() else selected - cardList.toSet()
             },
-            minRequired = 10, // Esempio per la preview
-            title = "Select Refined Cards"
+            minRequired = 10, // Example for the preview
+            title = stringResource(id = R.string.preferences_button_select_refined_cards, 0, 0)
         )
     }
 }
