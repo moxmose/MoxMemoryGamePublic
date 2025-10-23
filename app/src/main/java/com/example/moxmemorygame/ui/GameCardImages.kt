@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import com.example.moxmemorygame.R
 
 data class GameCardImages (
-    @DrawableRes
+    @param:DrawableRes
     val image: List<Int> = listOf(
         R.drawable.img_s_00,
         R.drawable.img_s_01,

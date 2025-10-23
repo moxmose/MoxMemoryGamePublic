@@ -1,41 +1,29 @@
 package com.example.moxmemorygame.ui.screens
 
 import android.annotation.SuppressLint
-import android.util.Log
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background // Added for ImagePreviewDialog
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,29 +34,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.compose.rememberNavController
-import com.example.moxmemorygame.ui.composables.BackgroundImg
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.ui.PreferencesViewModel
+import com.example.moxmemorygame.ui.composables.BackgroundImg
 import com.example.moxmemorygame.ui.composables.BackgroundSelectionDialog
 import com.example.moxmemorygame.ui.composables.BoardDimensionsSection
 import com.example.moxmemorygame.ui.composables.CardSelectionDialog
 import com.example.moxmemorygame.ui.composables.CardSelectionSection
 import com.example.moxmemorygame.ui.composables.PlayerNameSection
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
@@ -111,7 +90,7 @@ fun PreferencesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val cardSelectionError by preferencesViewModel.cardSelectionError.collectAsState()
-    
+
     val lazyListState = rememberLazyListState()
 
     LaunchedEffect(cardSelectionError) {
@@ -152,7 +131,7 @@ fun PreferencesScreen(
     // Counts for the dialogs (based on the temporary and reactive state)
     val tempRefinedCount = tempSelectedCards.count { it.startsWith("img_c_") }
     val tempSimpleCount = tempSelectedCards.count { it.startsWith("img_s_") }
-    
+
     val minRequiredPairs = remember(currentBoardWidth, currentBoardHeight) {
         (currentBoardWidth * currentBoardHeight) / 2
     }
@@ -173,9 +152,9 @@ fun PreferencesScreen(
     CardSelectionDialog(
         showDialog = showRefinedCardDialog,
         onDismiss = { showRefinedCardDialog = false },
-        onConfirm = { 
+        onConfirm = {
             preferencesViewModel.confirmCardSelections()
-            showRefinedCardDialog = false 
+            showRefinedCardDialog = false
         },
         cardResourceNames = refinedCardResourceNames,
         selectedCards = tempSelectedCards, // Use temp state
@@ -192,9 +171,9 @@ fun PreferencesScreen(
     CardSelectionDialog(
         showDialog = showSimpleCardDialog,
         onDismiss = { showSimpleCardDialog = false },
-        onConfirm = { 
+        onConfirm = {
             preferencesViewModel.confirmCardSelections()
-            showSimpleCardDialog = false 
+            showSimpleCardDialog = false
         },
         cardResourceNames = simpleCardResourceNames,
         selectedCards = tempSelectedCards, // Use temp state
@@ -214,12 +193,12 @@ fun PreferencesScreen(
             .padding(innerPadding),
     ) {
         BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds, modifier = Modifier.fillMaxSize()) // MODIFIED
-        Column(modifier = Modifier.fillMaxSize()) { 
-            Box(modifier = Modifier.weight(1f)) { 
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
                 LazyColumn(
-                    state = lazyListState, 
+                    state = lazyListState,
                     modifier = Modifier
-                        .fillMaxSize() 
+                        .fillMaxSize()
                         .padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -229,7 +208,7 @@ fun PreferencesScreen(
                         Text(stringResource(R.string.preferences_screen_title), style = MaterialTheme.typography.headlineMedium)
                     }
 
-                    item { 
+                    item {
                         PlayerNameSection(
                             tempPlayerName = tempPlayerName,
                             onPlayerNameChange = { tempPlayerName = it },
@@ -246,7 +225,7 @@ fun PreferencesScreen(
 
                                 // 2. THEN show the dialog
                                 showBackgroundDialog = true
-                                      },
+                            },
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -254,7 +233,7 @@ fun PreferencesScreen(
                         }
                     }
 
-                    item { 
+                    item {
                         BoardDimensionsSection(
                             modifier = Modifier.padding(top = 8.dp),
                             tempSliderWidth = tempSliderWidth,
@@ -278,13 +257,13 @@ fun PreferencesScreen(
                             simpleCardResourceNames = simpleCardResourceNames,
                             minRequiredPairs = minRequiredPairs,
                             selectedCardsCount = selectedCardsFromDataStore.size,
-                            onRefinedClick = { 
+                            onRefinedClick = {
                                 preferencesViewModel.prepareForCardSelection()
-                                showRefinedCardDialog = true 
+                                showRefinedCardDialog = true
                             },
-                            onSimpleClick = { 
+                            onSimpleClick = {
                                 preferencesViewModel.prepareForCardSelection()
-                                showSimpleCardDialog = true 
+                                showSimpleCardDialog = true
                             }
                         )
                     }
@@ -299,7 +278,7 @@ fun PreferencesScreen(
                             Text(stringResource(R.string.preferences_button_back_to_main_menu), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
-                } 
+                }
 
                 if (lazyListState.canScrollForward) {
                     Icon(
@@ -319,7 +298,9 @@ fun PreferencesScreen(
 }
 
 
-@SuppressLint("UnrememberedMutableState")
+@SuppressLint("ComposableViewModelCreation", "UnrememberedMutableState",
+    "ViewModelConstructorInComposable"
+)
 @Preview(showBackground = true)
 @Composable
 fun PreferencesScreenPreview() {
