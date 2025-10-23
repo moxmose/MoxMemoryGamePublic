@@ -12,17 +12,19 @@ import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.GameBoard
 import com.example.moxmemorygame.model.GameCard
+import com.example.moxmemorygame.model.SoundEvent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 import kotlin.math.max
-import com.example.moxmemorygame.ui.Screen
+import kotlin.math.roundToInt
 
 class GameViewModel(
     private val navController: NavHostController,
@@ -40,9 +42,6 @@ class GameViewModel(
 
     private val _moves = mutableIntStateOf(0)
     val moves get() = _moves
-
-    private var _gamePlayResetSound = mutableStateOf(false)
-    val gamePlayResetSound get() = _gamePlayResetSound.value
 
     private var lastMove: Pair<Int, Int> = Pair(0,0)
     private val noLastMove = Pair(-1, -1)
@@ -65,6 +64,9 @@ class GameViewModel(
     private val _isBoardInitialized = mutableStateOf(false)
     val isBoardInitialized: State<Boolean> = _isBoardInitialized
 
+    private val _playResetSound = MutableStateFlow(false)
+    val playResetSound: StateFlow<Boolean> = _playResetSound.asStateFlow()
+
     init {
         Log.d("GameVM", "init - Calling resetGame()")
         resetGame()
@@ -84,7 +86,7 @@ class GameViewModel(
                 _moves.intValue = 0
                 lastMove = noLastMove
                 cardInPlay = false
-                _gamePlayResetSound.value = true
+                _playResetSound.value = true // Signal the UI to play the sound
                 // These states are crucial for dialogs, make sure they are clean after a full reset.
                 gamePaused.value = false
                 gameResetRequest.value = false
@@ -95,6 +97,10 @@ class GameViewModel(
                 Log.d("GameVM", "resetGame - Main thread UI state reset completed")
             }
         }
+    }
+
+    fun onResetSoundPlayed() {
+        _playResetSound.value = false
     }
 
     private suspend fun loadAndShuffleCards() {
@@ -164,9 +170,7 @@ class GameViewModel(
         }
     }
 
-    fun checkGamePlayCardTurned(x: Int, y: Int,
-                                flipSound: () -> Unit, pauseSound: () -> Unit, failSound: () -> Unit,
-                                successSound: () -> Unit, winSound: () -> Unit) {
+    fun checkGamePlayCardTurned(x: Int, y: Int, onSoundEvent: (SoundEvent) -> Unit) {
         if (!isBoardInitialized.value) { 
             Log.w("GameVM_Check", "Board not initialized. Ignoring.")
             return
@@ -202,7 +206,7 @@ class GameViewModel(
         if (lastMove == noLastMove && !cardValueCurrentInitial.turned) {
             timeOfLastMove = currentElapsedTime
             lastMove = Pair(x, y)
-            flipSound()
+            onSoundEvent(SoundEvent.Flip)
             _moves.intValue++
             setTablePlayCardTurned(x = x,y = y, newTurnedState = true)
             cardInPlay = false
@@ -212,7 +216,7 @@ class GameViewModel(
             if (lastMove == Pair(x, y)) {
                 refreshPointsNoCoupleSelected(currentElapsedTime - timeOfLastMove)
                 lastMove = noLastMove
-                flipSound()
+                onSoundEvent(SoundEvent.Flip)
                 setTablePlayCardTurned(x = x,y = y, newTurnedState = false)
                 cardInPlay = false
                 return
@@ -258,7 +262,7 @@ class GameViewModel(
                     timeOfLastMove = currentElapsedTime
                     
                     if(checkAllCardsCoupled()) {
-                        winSound()
+                        onSoundEvent(SoundEvent.Win)
                         gameWon.value = true
                         timerViewModel.stopTimer()
                         requestPauseDialog() // Show GameWonDialog via gamePaused=true
@@ -269,14 +273,14 @@ class GameViewModel(
                             Log.d("GameVM", "Game won! Saved score: $finalScore for player: $pName")
                         }
                     } else {
-                        successSound()
+                        onSoundEvent(SoundEvent.Success)
                     }
                     lastMove = noLastMove
                     cardInPlay = false
                     return
                 } else {
                     refreshPointsWrongCouple(currentElapsedTime - timeOfLastMove)
-                    failSound()
+                    onSoundEvent(SoundEvent.Fail)
                     timeOfLastMove = currentElapsedTime
                     viewModelScope.launch(ioDispatcher) {
                         delayProvider(1400L)
@@ -348,13 +352,6 @@ class GameViewModel(
     fun resetCurrentGame() { 
         Log.d("GameVM", "resetCurrentGame - Calling resetGame() to restart current match.")
         resetGame() 
-    }
-
-    fun resetPlayResetSound(resetSound: () -> Unit) {
-        if (_gamePlayResetSound.value) {
-            resetSound()
-            _gamePlayResetSound.value = false
-        }
     }
 
     private fun checkAllCardsCoupled(): Boolean {
