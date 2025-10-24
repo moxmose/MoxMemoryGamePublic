@@ -39,10 +39,11 @@ fun MusicSelectionDialog(
     initialSelection: Set<String>
 ) {
     var currentSelection by remember { mutableStateOf(initialSelection) }
+    val allTrackNames = remember { allTracks.map { it.trackName }.toSet() }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
             modifier = Modifier.padding(16.dp)
         ) {
             Column(
@@ -60,12 +61,19 @@ fun MusicSelectionDialog(
 
                 OutlinedButton(
                     onClick = {
-                        onConfirm(emptySet())
-                        onDismiss()
+                        if (currentSelection == allTrackNames) {
+                            currentSelection = emptySet()
+                        } else {
+                            currentSelection = allTrackNames
+                        }
                     },
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 ) {
-                    Text(stringResource(R.string.preferences_music_selection_none))
+                    Text(
+                        text = stringResource(R.string.dialog_select_deselect_all),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
 
                 LazyColumn(modifier = Modifier.weight(1f)) {
@@ -109,19 +117,15 @@ fun MusicSelectionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                Button(
+                    onClick = { onConfirm(currentSelection) },
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Text(stringResource(R.string.button_cancel))
-                    }
-                    Button(onClick = { onConfirm(currentSelection) }) {
-                        Text(stringResource(R.string.button_ok))
-                    }
+                    Text(
+                        text = stringResource(R.string.button_ok),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }

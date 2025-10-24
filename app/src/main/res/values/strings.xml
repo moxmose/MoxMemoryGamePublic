@@ -82,5 +82,6 @@
     <string name="game_error_images_not_loaded">Error: Card images not loaded for ShowTablePlay.</string>
     <string name="card_name_refined">Refined %1$s</string>
     <string name="card_name_simple">Simple %1$s</string>
+    <string name="preferences_music_selection_toggle_all">Select/Deselect ALL</string>
 
 </resources>
