@@ -10,6 +10,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.GameCard
+import com.example.moxmemorygame.model.SoundEvent
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -75,7 +76,7 @@ class GameViewModelTest {
     }
 
     @Test
-    fun initial_state_is_correct() = runTest(testDispatcher) {
+    fun initialStateIsCorrect() = runTest(testDispatcher) {
         advanceUntilIdle()
 
         val expectedWidth = IAppSettingsDataStore.DEFAULT_BOARD_WIDTH
@@ -88,49 +89,46 @@ class GameViewModelTest {
         assertThat(viewModel.tablePlay!!.boardWidth).isEqualTo(expectedWidth)
         assertThat(viewModel.tablePlay!!.boardHeight).isEqualTo(expectedHeight)
         assertThat(viewModel.tablePlay!!.cardsArray.sumOf { it.size }).isEqualTo(expectedWidth * expectedHeight)
+        assertThat(viewModel.playResetSound.value).isTrue() // Check that reset sound is requested
     }
 
     @Test
-    fun checkGamePlayCardTurned_whenFirstCardIsTurned_updatesStateCorrectly() = runTest(testDispatcher) {
-        // 1. Arrange
+    fun checkGamePlayCardTurnedWhenFirstCardIsTurnedUpdatesStateCorrectly() = runTest(testDispatcher) {
+        // Arrange
         advanceUntilIdle() // Ensure initial setup is complete
-
-        var flipSoundCalled = false
-        val flipSound = { flipSoundCalled = true }
+        var triggeredSound: SoundEvent? = null
+        val onSoundEvent = { event: SoundEvent -> triggeredSound = event }
 
         val cardBeforeTurn = viewModel.tablePlay!!.cardsArray[0][0].value
         assertThat(cardBeforeTurn.turned).isFalse() // Pre-condition
 
-        // 2. Act
-        viewModel.checkGamePlayCardTurned(
-            x = 0, y = 0, flipSound = flipSound, pauseSound = {}, failSound = {}, successSound = {}, winSound = {}
-        )
+        // Act
+        viewModel.checkGamePlayCardTurned(x = 0, y = 0, onSoundEvent = onSoundEvent)
 
-        // 3. Assert
+        // Assert
         val cardAfterTurn = viewModel.tablePlay!!.cardsArray[0][0].value
         assertThat(cardAfterTurn.turned).isTrue()
         assertThat(viewModel.moves.intValue).isEqualTo(1)
-        assertThat(flipSoundCalled).isTrue()
+        assertThat(triggeredSound).isEqualTo(SoundEvent.Flip)
     }
 
     @Test
-    fun checkGamePlayCardTurned_whenCorrectPairIsTurned_updatesScoreAndState() = runTest(testDispatcher) {
-        // 1. Arrange
+    fun checkGamePlayCardTurnedWhenCorrectPairIsTurnedUpdatesScoreAndState() = runTest(testDispatcher) {
+        // Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
         val (card1Pos, card2Pos) = findPairOnBoard(board.cardsArray)
         val initialScore = viewModel.score.intValue
+        val triggeredSounds = mutableListOf<SoundEvent>()
+        val onSoundEvent: (SoundEvent) -> Unit = { event: SoundEvent -> triggeredSounds.add(event) }
 
-        var successSoundCalled = false
-        val successSound = { successSoundCalled = true }
-
-        // 2. Act
-        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
+        // Act
+        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, onSoundEvent)
         fakeTimerViewModel.setElapsedTime(2) // Simulate 2 seconds passing
-        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, {}, {}, {}, successSound, {})
+        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, onSoundEvent)
         advanceUntilIdle()
 
-        // 3. Assert
+        // Assert
         val card1 = board.cardsArray[card1Pos.first][card1Pos.second].value
         val card2 = board.cardsArray[card2Pos.first][card2Pos.second].value
 
@@ -138,59 +136,54 @@ class GameViewModelTest {
         assertThat(card2.coupled).isTrue()
         assertThat(viewModel.score.intValue).isGreaterThan(initialScore)
         assertThat(viewModel.moves.intValue).isEqualTo(2)
-        assertThat(successSoundCalled).isTrue()
+        assertThat(triggeredSounds).contains(SoundEvent.Success)
     }
 
     @Test
-    fun checkGamePlayCardTurned_whenIncorrectPairIsTurned_flipsThemBack() = runTest(testDispatcher) {
-        // 1. Arrange
+    fun checkGamePlayCardTurnedWhenIncorrectPairIsTurnedFlipsThemBack() = runTest(testDispatcher) {
+        // Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
         val (card1Pos, card2Pos) = findNonPairOnBoard(board.cardsArray)
+        val triggeredSounds = mutableListOf<SoundEvent>()
+        val onSoundEvent: (SoundEvent) -> Unit = { event: SoundEvent -> triggeredSounds.add(event) }
 
-        var failSoundCalled = false
-        val failSound = { failSoundCalled = true }
-
-        // 2. Act
-        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
+        // Act
+        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, onSoundEvent)
         fakeTimerViewModel.setElapsedTime(2) // Simulate 2 seconds passing
-        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, {}, {}, failSound, {}, {})
+        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, onSoundEvent)
 
         advanceUntilIdle()
 
-        // 3. Assert
+        // Assert
         val card1 = board.cardsArray[card1Pos.first][card1Pos.second].value
         val card2 = board.cardsArray[card2Pos.first][card2Pos.second].value
 
         assertThat(card1.turned).isFalse()
         assertThat(card2.turned).isFalse()
-        assertThat(failSoundCalled).isTrue()
+        assertThat(triggeredSounds).contains(SoundEvent.Fail)
     }
 
     @Test
-    fun checkGamePlayCardTurned_whenLastPairIsFound_triggersWinCondition() = runTest(testDispatcher) {
-        // 1. Arrange
+    fun checkGamePlayCardTurnedWhenLastPairIsFoundTriggersWinCondition() = runTest(testDispatcher) {
+        // Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
-        // Simulate an almost-won game, leaving only one pair to be discovered
         val (lastPairCard1, lastPairCard2) = setupAlmostWonBoard(board.cardsArray)
         viewModel.score.intValue = 900 // Simulate an existing score
+        val triggeredSounds = mutableListOf<SoundEvent>()
+        val onSoundEvent: (SoundEvent) -> Unit = { event: SoundEvent -> triggeredSounds.add(event) }
 
-        var winSoundCalled = false
-        val winSound = { winSoundCalled = true }
-
-        // 2. Act
-        // Turn the first card of the last pair
-        viewModel.checkGamePlayCardTurned(lastPairCard1.first, lastPairCard1.second, {}, {}, {}, {}, {})
+        // Act
+        viewModel.checkGamePlayCardTurned(lastPairCard1.first, lastPairCard1.second, onSoundEvent)
         fakeTimerViewModel.setElapsedTime(2) // Simulate 2 seconds passing
-        // Turn the second card and trigger the win
-        viewModel.checkGamePlayCardTurned(lastPairCard2.first, lastPairCard2.second, {}, {}, {}, {}, winSound)
+        viewModel.checkGamePlayCardTurned(lastPairCard2.first, lastPairCard2.second, onSoundEvent)
         advanceUntilIdle()
 
-        // 3. Assert
+        // Assert
         assertThat(viewModel.gameWon.value).isTrue()
         assertThat(fakeTimerViewModel.isTimerRunning()).isFalse()
-        assertThat(winSoundCalled).isTrue()
+        assertThat(triggeredSounds).contains(SoundEvent.Win)
         assertThat(viewModel.gamePaused.value).isTrue() // Verify that the pause/win dialog is requested
 
         // Check that the final score was saved
@@ -199,39 +192,41 @@ class GameViewModelTest {
     }
 
     @Test
-    fun resetCurrentGame_resetsAllGameState() = runTest(testDispatcher) {
-        // 1. Arrange: Simulate a game in progress
+    fun resetCurrentGameResetsAllGameState() = runTest(testDispatcher) {
+        // Arrange: Simulate a game in progress
         advanceUntilIdle()
         viewModel.score.intValue = 500
         viewModel.moves.intValue = 10
         fakeTimerViewModel.setElapsedTime(60) // 1 minute passed
         viewModel.gameWon.value = true // Simulate a won state to ensure it gets reset
 
-        // 2. Act
+        // Act
         viewModel.resetCurrentGame()
         advanceUntilIdle()
 
-        // 3. Assert
+        // Assert
         assertThat(viewModel.score.intValue).isEqualTo(0)
         assertThat(viewModel.moves.intValue).isEqualTo(0)
         assertThat(viewModel.gameWon.value).isFalse()
         assertThat(fakeTimerViewModel.elapsedSeconds.value).isEqualTo(0L)
         assertThat(fakeTimerViewModel.isTimerRunning()).isTrue() // Timer should restart
+        assertThat(viewModel.playResetSound.value).isTrue()
     }
 
     @Test
-    fun checkGamePlayCardTurned_whenSameCardIsClickedTwice_flipsItBackAndPenalizes() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurnedWhenSameCardIsClickedTwiceFlipsItBackAndPenalizes() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val initialScore = viewModel.score.intValue
         val card = viewModel.tablePlay!!.cardsArray[0][0]
+        val onSoundEvent = { _: SoundEvent -> } // We don't care about the sound here
 
         // Sanity check
         assertThat(card.value.turned).isFalse()
 
         // 2. Act
         // First click
-        viewModel.checkGamePlayCardTurned(0, 0, {}, {}, {}, {}, {})
+        viewModel.checkGamePlayCardTurned(0, 0, onSoundEvent)
         // Check intermediate state
         assertThat(card.value.turned).isTrue()
 
@@ -239,7 +234,7 @@ class GameViewModelTest {
         fakeTimerViewModel.setElapsedTime(2)
 
         // Second click on the same card
-        viewModel.checkGamePlayCardTurned(0, 0, {}, {}, {}, {}, {})
+        viewModel.checkGamePlayCardTurned(0, 0, onSoundEvent)
         advanceUntilIdle()
 
         // 3. Assert
@@ -249,15 +244,16 @@ class GameViewModelTest {
     }
 
     @Test
-    fun checkGamePlayCardTurned_whenCoupledCardIsClicked_doesNothing() = runTest(testDispatcher) {
+    fun checkGamePlayCardTurnedWhenCoupledCardIsClickedDoesNothing() = runTest(testDispatcher) {
         // 1. Arrange
         advanceUntilIdle()
         val board = viewModel.tablePlay!!
         val (card1Pos, card2Pos) = findPairOnBoard(board.cardsArray)
+        val onSoundEvent = { _: SoundEvent -> } // We don't care about the sound here
 
         // Couple the first pair
-        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
-        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, {}, {}, {}, {}, {})
+        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, onSoundEvent)
+        viewModel.checkGamePlayCardTurned(card2Pos.first, card2Pos.second, onSoundEvent)
         advanceUntilIdle()
 
         // Pre-condition check
@@ -268,7 +264,7 @@ class GameViewModelTest {
 
         // 2. Act
         // Click on the already coupled card
-        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, {}, {}, {}, {}, {})
+        viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, onSoundEvent)
         advanceUntilIdle()
 
         // 3. Assert

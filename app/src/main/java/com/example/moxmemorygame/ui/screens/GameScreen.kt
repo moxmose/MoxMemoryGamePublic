@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.moxmemorygame.R
+import com.example.moxmemorygame.model.GameFooterAction
 import com.example.moxmemorygame.model.SoundEvent
 import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.SoundUtils
@@ -43,7 +44,6 @@ fun GameScreen(
 ) {
     val localSoundContext = LocalContext.current
     
-    // The logic is now inside the SoundEvent class. The UI just triggers the event.
     val onSoundEvent: (SoundEvent) -> Unit = {
         SoundUtils.playSound(localSoundContext, it.resId)
     }
@@ -63,14 +63,24 @@ fun GameScreen(
         gameViewModel.checkGamePlayCardTurned(x, y, onSoundEvent)
     }
 
-    // Actions for the Pause and Reset buttons in the UI (Tail)
-    val onPauseClicked = { gameViewModel.requestPauseDialog(); onSoundEvent(SoundEvent.Pause) }
-    val onResetClicked = { gameViewModel.requestResetDialog(); onSoundEvent(SoundEvent.Pause) } 
-
     // Actions for the dialogs
     val onDismissPauseDialog = { gameViewModel.dismissPauseDialog(); onSoundEvent(SoundEvent.Pause) }
     val onCancelResetDialog = { gameViewModel.cancelResetDialog(); onSoundEvent(SoundEvent.Pause) }
     val onConfirmAndNavigateToMenu = { gameViewModel.navigateToOpeningMenuAndCleanupDialogStates() }
+    
+    // A single, clean handler for all footer actions
+    val onFooterAction = { action: GameFooterAction ->
+        when (action) {
+            GameFooterAction.Pause -> {
+                gameViewModel.requestPauseDialog()
+                onSoundEvent(SoundEvent.Pause)
+            }
+            GameFooterAction.Reset -> {
+                gameViewModel.requestResetDialog()
+                onSoundEvent(SoundEvent.Pause) // The same sound is used for pause and reset request
+            }
+        }
+    }
 
     val gameCardImages = gameViewModel.gameCardImages 
     val gamePaused by gameViewModel.gamePaused 
@@ -162,10 +172,7 @@ fun GameScreen(
                 }
             }
 
-            Tail(
-                actionOnPause = onPauseClicked, 
-                actionOnReset = onResetClicked  
-            )
+            Tail(onAction = onFooterAction)
             Spacer(modifier = Modifier.padding(5.dp))
         }
     }
