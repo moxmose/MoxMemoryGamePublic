@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,12 +18,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,12 +45,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
+import com.example.moxmemorygame.model.BackgroundMusic
 import com.example.moxmemorygame.ui.PreferencesViewModel
 import com.example.moxmemorygame.ui.composables.BackgroundImg
 import com.example.moxmemorygame.ui.composables.BackgroundSelectionDialog
 import com.example.moxmemorygame.ui.composables.BoardDimensionsSection
 import com.example.moxmemorygame.ui.composables.CardSelectionDialog
 import com.example.moxmemorygame.ui.composables.CardSelectionSection
+import com.example.moxmemorygame.ui.composables.MusicSelectionDialog
 import com.example.moxmemorygame.ui.composables.PlayerNameSection
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -62,7 +68,6 @@ fun PreferencesScreen(
     val selectedBackgroundsFromVM by preferencesViewModel.selectedBackgrounds.collectAsState()
     val availableBackgrounds = preferencesViewModel.availableBackgrounds
 
-    // Use temp state for the dialog UI
     val tempSelectedCards by preferencesViewModel.tempSelectedCards.collectAsState()
     val selectedCardsFromDataStore by preferencesViewModel.selectedCards.collectAsState()
 
@@ -72,10 +77,16 @@ fun PreferencesScreen(
     val currentBoardHeight by preferencesViewModel.selectedBoardHeight.collectAsState()
     val boardDimensionError by preferencesViewModel.boardDimensionError.collectAsState()
 
+    // Music states
+    val isMusicEnabled by preferencesViewModel.isMusicEnabled.collectAsState()
+    val musicVolume by preferencesViewModel.musicVolume.collectAsState()
+    val selectedMusicTrackNames by preferencesViewModel.selectedMusicTrackNames.collectAsState()
+
     var tempPlayerName by remember(playerName) { mutableStateOf(playerName) }
     var showBackgroundDialog by remember { mutableStateOf(false) }
     var showRefinedCardDialog by remember { mutableStateOf(false) }
     var showSimpleCardDialog by remember { mutableStateOf(false) }
+    var showMusicDialog by remember { mutableStateOf(false) }
 
     var tempSliderWidth by remember(currentBoardWidth) { mutableStateOf(currentBoardWidth.toFloat()) }
     var tempSliderHeight by remember(currentBoardHeight) { mutableStateOf(currentBoardHeight.toFloat()) }
@@ -124,11 +135,9 @@ fun PreferencesScreen(
         availableCardResourceNames.filter { it.startsWith("img_s_") }
     }
 
-    // Counts for the main UI (based on the saved state)
     val refinedCountFromDataStore = selectedCardsFromDataStore.count { it.startsWith("img_c_") }
     val simpleCountFromDataStore = selectedCardsFromDataStore.count { it.startsWith("img_s_") }
 
-    // Counts for the dialogs (based on the temporary and reactive state)
     val tempRefinedCount = tempSelectedCards.count { it.startsWith("img_c_") }
     val tempSimpleCount = tempSelectedCards.count { it.startsWith("img_s_") }
 
@@ -136,63 +145,80 @@ fun PreferencesScreen(
         (currentBoardWidth * currentBoardHeight) / 2
     }
 
-    BackgroundSelectionDialog(
-        showDialog = showBackgroundDialog,
-        onDismiss = { showBackgroundDialog = false },
-        availableBackgrounds = availableBackgrounds,
-        selectedBackgrounds = selectedBackgroundsFromVM,
-        onBackgroundSelectionChanged = { bgName, isSelected ->
-            preferencesViewModel.updateBackgroundSelection(bgName, isSelected)
-        },
-        onToggleSelectAll = { selectAll ->
-            preferencesViewModel.toggleSelectAllBackgrounds(selectAll)
-        }
-    )
+    // --- DIALOGS ---
+    if (showBackgroundDialog) {
+        BackgroundSelectionDialog(
+            onDismiss = { showBackgroundDialog = false },
+            availableBackgrounds = availableBackgrounds,
+            selectedBackgrounds = selectedBackgroundsFromVM,
+            onBackgroundSelectionChanged = { bgName, isSelected ->
+                preferencesViewModel.updateBackgroundSelection(bgName, isSelected)
+            },
+            onToggleSelectAll = { selectAll ->
+                preferencesViewModel.toggleSelectAllBackgrounds(selectAll)
+            }
+        )
+    }
 
-    CardSelectionDialog(
-        showDialog = showRefinedCardDialog,
-        onDismiss = { showRefinedCardDialog = false },
-        onConfirm = {
-            preferencesViewModel.confirmCardSelections()
-            showRefinedCardDialog = false
-        },
-        cardResourceNames = refinedCardResourceNames,
-        selectedCards = tempSelectedCards, // Use temp state
-        onCardSelectionChanged = { cardName, isSelected ->
-            preferencesViewModel.updateCardSelection(cardName, isSelected)
-        },
-        onToggleSelectAll = { selectAll ->
-            preferencesViewModel.toggleSelectAllCards(refinedCardResourceNames, selectAll)
-        },
-        minRequired = minRequiredPairs,
-        title = stringResource(R.string.preferences_button_select_refined_cards, tempRefinedCount, refinedCardResourceNames.size)
-    )
+    if (showRefinedCardDialog) {
+        CardSelectionDialog(
+            onDismiss = { showRefinedCardDialog = false },
+            onConfirm = {
+                preferencesViewModel.confirmCardSelections()
+                showRefinedCardDialog = false
+            },
+            cardResourceNames = refinedCardResourceNames,
+            selectedCards = tempSelectedCards,
+            onCardSelectionChanged = { cardName, isSelected ->
+                preferencesViewModel.updateCardSelection(cardName, isSelected)
+            },
+            onToggleSelectAll = { selectAll ->
+                preferencesViewModel.toggleSelectAllCards(refinedCardResourceNames, selectAll)
+            },
+            minRequired = minRequiredPairs,
+            title = stringResource(R.string.preferences_button_select_refined_cards, tempRefinedCount, refinedCardResourceNames.size)
+        )
+    }
 
-    CardSelectionDialog(
-        showDialog = showSimpleCardDialog,
-        onDismiss = { showSimpleCardDialog = false },
-        onConfirm = {
-            preferencesViewModel.confirmCardSelections()
-            showSimpleCardDialog = false
-        },
-        cardResourceNames = simpleCardResourceNames,
-        selectedCards = tempSelectedCards, // Use temp state
-        onCardSelectionChanged = { cardName, isSelected ->
-            preferencesViewModel.updateCardSelection(cardName, isSelected)
-        },
-        onToggleSelectAll = { selectAll ->
-            preferencesViewModel.toggleSelectAllCards(simpleCardResourceNames, selectAll)
-        },
-        minRequired = minRequiredPairs,
-        title = stringResource(R.string.preferences_button_select_simple_cards, tempSimpleCount, simpleCardResourceNames.size)
-    )
+    if (showSimpleCardDialog) {
+        CardSelectionDialog(
+            onDismiss = { showSimpleCardDialog = false },
+            onConfirm = {
+                preferencesViewModel.confirmCardSelections()
+                showSimpleCardDialog = false
+            },
+            cardResourceNames = simpleCardResourceNames,
+            selectedCards = tempSelectedCards,
+            onCardSelectionChanged = { cardName, isSelected ->
+                preferencesViewModel.updateCardSelection(cardName, isSelected)
+            },
+            onToggleSelectAll = { selectAll ->
+                preferencesViewModel.toggleSelectAllCards(simpleCardResourceNames, selectAll)
+            },
+            minRequired = minRequiredPairs,
+            title = stringResource(R.string.preferences_button_select_simple_cards, tempSimpleCount, simpleCardResourceNames.size)
+        )
+    }
 
+    if (showMusicDialog) {
+        MusicSelectionDialog(
+            onDismiss = { showMusicDialog = false },
+            onConfirm = { trackNames ->
+                preferencesViewModel.saveSelectedMusicTracks(trackNames)
+                showMusicDialog = false
+            },
+            allTracks = BackgroundMusic.allTracks,
+            initialSelection = selectedMusicTrackNames
+        )
+    }
+
+    // --- MAIN UI ---
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
     ) {
-        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds, modifier = Modifier.fillMaxSize()) // MODIFIED
+        BackgroundImg(selectedBackgrounds = preferencesViewModel.selectedBackgrounds, modifier = Modifier.fillMaxSize())
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.weight(1f)) {
                 LazyColumn(
@@ -218,12 +244,8 @@ fun PreferencesScreen(
 
                     item {
                         OutlinedButton(
-
                             onClick = {
-                                // 1. FIRST prepare the fallback in the ViewModel
                                 preferencesViewModel.prepareForBackgroundSelection()
-
-                                // 2. THEN show the dialog
                                 showBackgroundDialog = true
                             },
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
@@ -269,6 +291,21 @@ fun PreferencesScreen(
                     }
 
                     item {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+
+                    item {
+                        MusicPreferencesSection(
+                            isMusicEnabled = isMusicEnabled,
+                            onMusicEnabledChange = { preferencesViewModel.saveIsMusicEnabled(it) },
+                            musicVolume = musicVolume,
+                            onMusicVolumeChange = { preferencesViewModel.saveMusicVolume(it) },
+                            selectedTracksCount = selectedMusicTrackNames.size,
+                            onSelectTracksClicked = { showMusicDialog = true }
+                        )
+                    }
+
+                    item {
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { preferencesViewModel.onBackToMainMenuClicked() },
@@ -297,17 +334,60 @@ fun PreferencesScreen(
     }
 }
 
+@Composable
+fun MusicPreferencesSection(
+    isMusicEnabled: Boolean,
+    onMusicEnabledChange: (Boolean) -> Unit,
+    musicVolume: Float,
+    onMusicVolumeChange: (Float) -> Unit,
+    selectedTracksCount: Int,
+    onSelectTracksClicked: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.preferences_music_settings_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
 
-@SuppressLint("ComposableViewModelCreation", "UnrememberedMutableState",
-    "ViewModelConstructorInComposable"
-)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(stringResource(R.string.preferences_music_enable_label), style = MaterialTheme.typography.bodyLarge)
+            Switch(checked = isMusicEnabled, onCheckedChange = onMusicEnabledChange)
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.preferences_music_volume_label, (musicVolume * 100).roundToInt()), style = MaterialTheme.typography.bodyLarge)
+            Slider(
+                value = musicVolume,
+                onValueChange = onMusicVolumeChange,
+                valueRange = 0f..1f,
+                enabled = isMusicEnabled
+            )
+        }
+
+        OutlinedButton(
+            onClick = onSelectTracksClicked,
+            enabled = isMusicEnabled,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.preferences_button_select_music_tracks, selectedTracksCount), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
+
+
+@SuppressLint("ComposableViewModelCreation", "UnrememberedMutableState")
 @Preview(showBackground = true)
 @Composable
 fun PreferencesScreenPreview() {
-    // Fake ViewModel for preview
     val fakeDataStore = FakeAppSettingsDataStore()
 
-    // Pre-populate the datastore for the preview
     LaunchedEffect(Unit) {
         fakeDataStore.savePlayerName("Preview Player")
         fakeDataStore.saveSelectedBackgrounds(setOf("background_01", "background_02"))

@@ -47,23 +47,20 @@ import java.util.Locale
 
 @Composable
 fun BackgroundSelectionDialog(
-    showDialog: Boolean,
     onDismiss: () -> Unit,
     availableBackgrounds: List<String>,
     selectedBackgrounds: Set<String>,
     onBackgroundSelectionChanged: (String, Boolean) -> Unit,
     onToggleSelectAll: (Boolean) -> Unit
 ) {
-    if (showDialog) {
-        Dialog(onDismissRequest = onDismiss) {
-            BackgroundSelectionDialogContent(
-                onDismiss = onDismiss,
-                availableBackgrounds = availableBackgrounds,
-                selectedBackgrounds = selectedBackgrounds,
-                onBackgroundSelectionChanged = onBackgroundSelectionChanged,
-                onToggleSelectAll = onToggleSelectAll
-            )
-        }
+    Dialog(onDismissRequest = onDismiss) {
+        BackgroundSelectionDialogContent(
+            onDismiss = onDismiss,
+            availableBackgrounds = availableBackgrounds,
+            selectedBackgrounds = selectedBackgrounds,
+            onBackgroundSelectionChanged = onBackgroundSelectionChanged,
+            onToggleSelectAll = onToggleSelectAll
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.data.local
 
+import com.example.moxmemorygame.model.BackgroundMusic
 import com.example.moxmemorygame.model.ScoreEntry
 import kotlinx.coroutines.flow.StateFlow
 
@@ -16,6 +17,9 @@ interface IAppSettingsDataStore {
         )
         const val DEFAULT_BOARD_WIDTH = 3
         const val DEFAULT_BOARD_HEIGHT = 4
+        val DEFAULT_MUSIC_TRACKS: Set<String> = BackgroundMusic.allTrackNames
+        const val DEFAULT_IS_MUSIC_ENABLED = true
+        const val DEFAULT_MUSIC_VOLUME = 0.3f
     }
 
     val playerName: StateFlow<String>
@@ -27,6 +31,9 @@ interface IAppSettingsDataStore {
     val selectedBoardWidth: StateFlow<Int>
     val selectedBoardHeight: StateFlow<Int>
     val isFirstTimeLaunch: StateFlow<Boolean>
+    val selectedMusicTrackNames: StateFlow<Set<String>>
+    val isMusicEnabled: StateFlow<Boolean>
+    val musicVolume: StateFlow<Float>
 
     suspend fun savePlayerName(name: String)
     suspend fun saveSelectedBackgrounds(backgrounds: Set<String>)
@@ -34,4 +41,7 @@ interface IAppSettingsDataStore {
     suspend fun saveScore(playerName: String, score: Int)
     suspend fun saveBoardDimensions(width: Int, height: Int)
     suspend fun saveIsFirstTimeLaunch(isFirstTime: Boolean)
+    suspend fun saveSelectedMusicTracks(trackNames: Set<String>)
+    suspend fun saveIsMusicEnabled(isEnabled: Boolean)
+    suspend fun saveMusicVolume(volume: Float)
 }

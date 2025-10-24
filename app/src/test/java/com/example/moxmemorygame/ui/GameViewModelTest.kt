@@ -97,7 +97,7 @@ class GameViewModelTest {
         // Arrange
         advanceUntilIdle() // Ensure initial setup is complete
         var triggeredSound: SoundEvent? = null
-        val onSoundEvent = { event: SoundEvent -> triggeredSound = event }
+        val onSoundEvent: (SoundEvent) -> Unit = { event -> triggeredSound = event }
 
         val cardBeforeTurn = viewModel.tablePlay!!.cardsArray[0][0].value
         assertThat(cardBeforeTurn.turned).isFalse() // Pre-condition
@@ -120,7 +120,7 @@ class GameViewModelTest {
         val (card1Pos, card2Pos) = findPairOnBoard(board.cardsArray)
         val initialScore = viewModel.score.intValue
         val triggeredSounds = mutableListOf<SoundEvent>()
-        val onSoundEvent: (SoundEvent) -> Unit = { event: SoundEvent -> triggeredSounds.add(event) }
+        val onSoundEvent: (SoundEvent) -> Unit = { event -> triggeredSounds.add(event) }
 
         // Act
         viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, onSoundEvent)
@@ -146,7 +146,7 @@ class GameViewModelTest {
         val board = viewModel.tablePlay!!
         val (card1Pos, card2Pos) = findNonPairOnBoard(board.cardsArray)
         val triggeredSounds = mutableListOf<SoundEvent>()
-        val onSoundEvent: (SoundEvent) -> Unit = { event: SoundEvent -> triggeredSounds.add(event) }
+        val onSoundEvent: (SoundEvent) -> Unit = { event -> triggeredSounds.add(event) }
 
         // Act
         viewModel.checkGamePlayCardTurned(card1Pos.first, card1Pos.second, onSoundEvent)
@@ -172,7 +172,7 @@ class GameViewModelTest {
         val (lastPairCard1, lastPairCard2) = setupAlmostWonBoard(board.cardsArray)
         viewModel.score.intValue = 900 // Simulate an existing score
         val triggeredSounds = mutableListOf<SoundEvent>()
-        val onSoundEvent: (SoundEvent) -> Unit = { event: SoundEvent -> triggeredSounds.add(event) }
+        val onSoundEvent: (SoundEvent) -> Unit = { event -> triggeredSounds.add(event) }
 
         // Act
         viewModel.checkGamePlayCardTurned(lastPairCard1.first, lastPairCard1.second, onSoundEvent)

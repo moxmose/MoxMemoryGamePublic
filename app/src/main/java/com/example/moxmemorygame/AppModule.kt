@@ -2,10 +2,10 @@ package com.example.moxmemorygame
 
 import android.util.Log
 import androidx.navigation.NavHostController
-// Imports added/corrected for IAppSettingsDataStore and RealAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.data.local.RealAppSettingsDataStore
 import com.example.moxmemorygame.data.local.dataStore
+import com.example.moxmemorygame.ui.BackgroundMusicManager
 import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.NavigationManager
 import com.example.moxmemorygame.ui.OpeningMenuViewModel
@@ -27,6 +27,14 @@ val myAppModule = module {
     single<CoroutineScope>(named("ApplicationScope")) { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
     single<IAppSettingsDataStore> { RealAppSettingsDataStore(androidContext().dataStore, get(named("ApplicationScope"))) }
+
+    single {
+        BackgroundMusicManager(
+            context = androidContext(),
+            appSettingsDataStore = get(),
+            externalScope = get(named("ApplicationScope"))
+        )
+    }
 
     viewModel { (navController: NavHostController) ->
         GameViewModel(

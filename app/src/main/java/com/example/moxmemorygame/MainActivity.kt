@@ -8,16 +8,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.moxmemorygame.ui.BackgroundMusicManager
 import com.example.moxmemorygame.ui.NavGraph
 import com.example.moxmemorygame.ui.theme.MoxMemoryGameTheme
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+
+    // Inject the BackgroundMusicManager. Koin will create and manage its lifecycle.
+    private val backgroundMusicManager: BackgroundMusicManager by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // According to the documentation, installSplashScreen should be called BEFORE super.onCreate
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
+
+        // By referencing the manager here, we ensure Koin initializes it and starts the observers.
+        // The manager will then handle its own lifecycle internally.
+        backgroundMusicManager.toString() // This forces Koin to create the instance
 
         // Determine whether to enable edge-to-edge based on screen width
         val screenWidthDp = resources.configuration.screenWidthDp
@@ -38,5 +47,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Resume music when the app comes into the foreground.
+        backgroundMusicManager.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause music when the app goes into the background.
+        backgroundMusicManager.onPause()
     }
 }

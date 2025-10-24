@@ -30,6 +30,13 @@
     <string name="preferences_board_width">Width: %1$d</string>
     <string name="preferences_board_height">Height: %1$d</string>
     <string name="preferences_board_current_size">Current Size: %1$dx%2$d</string>
+    <string name="preferences_music_settings_title">MUSIC SETTINGS</string>
+    <string name="preferences_music_enable_label">Enable Music</string>
+    <string name="preferences_music_volume_label">Volume: %1$d%%</string>
+    <string name="preferences_button_select_music_tracks">SELECT MUSIC TRACKS
+(%1$d selected)</string>
+    <string name="preferences_music_selection_dialog_title">Select Music Tracks</string>
+    <string name="preferences_music_selection_none">None (no music)</string>
 
     <!-- Card Types -->
     <string name="card_type_refined">Refined</string>

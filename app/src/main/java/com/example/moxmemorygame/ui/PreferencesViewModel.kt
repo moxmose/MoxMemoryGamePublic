@@ -44,9 +44,15 @@ class PreferencesViewModel(
     private val _boardDimensionError = MutableStateFlow<String?>(null)
     val boardDimensionError: StateFlow<String?> = _boardDimensionError.asStateFlow()
 
+    // Music Preferences
+    val isMusicEnabled: StateFlow<Boolean> = appSettingsDataStore.isMusicEnabled
+    val musicVolume: StateFlow<Float> = appSettingsDataStore.musicVolume
+    val selectedMusicTrackNames: StateFlow<Set<String>> = appSettingsDataStore.selectedMusicTrackNames
+
     private var lastSaveCardsJob: Job? = null
     private var lastSaveBackgroundsJob: Job? = null
     private var lastSaveDimensionsJob: Job? = null
+    private var lastSaveMusicJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -184,7 +190,26 @@ class PreferencesViewModel(
             lastSaveBackgroundsJob?.join()
             lastSaveCardsJob?.join()
             lastSaveDimensionsJob?.join()
+            lastSaveMusicJob?.join()
             navController.popBackStack()
+        }
+    }
+
+    fun saveIsMusicEnabled(isEnabled: Boolean) {
+        lastSaveMusicJob = viewModelScope.launch {
+            appSettingsDataStore.saveIsMusicEnabled(isEnabled)
+        }
+    }
+
+    fun saveMusicVolume(volume: Float) {
+        lastSaveMusicJob = viewModelScope.launch {
+            appSettingsDataStore.saveMusicVolume(volume)
+        }
+    }
+
+    fun saveSelectedMusicTracks(trackNames: Set<String>) {
+        lastSaveMusicJob = viewModelScope.launch {
+            appSettingsDataStore.saveSelectedMusicTracks(trackNames)
         }
     }
 

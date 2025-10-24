@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.IOException
 
@@ -48,6 +50,9 @@ class RealAppSettingsDataStore(
         val IS_FIRST_TIME_LAUNCH = booleanPreferencesKey("is_first_time_launch")
         val TOP_RANKING = stringPreferencesKey("top_ranking")
         val LAST_PLAYED_ENTRY = stringPreferencesKey("last_played_entry")
+        val SELECTED_MUSIC_TRACK_NAMES = stringSetPreferencesKey("selected_music_track_names")
+        val IS_MUSIC_ENABLED = booleanPreferencesKey("is_music_enabled")
+        val MUSIC_VOLUME = floatPreferencesKey("music_volume")
     }
 
     private val _isDataLoaded = MutableStateFlow(false)
@@ -97,6 +102,21 @@ class RealAppSettingsDataStore(
         }
         .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), null)
 
+    override val selectedMusicTrackNames: StateFlow<Set<String>> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.SELECTED_MUSIC_TRACK_NAMES] ?: IAppSettingsDataStore.DEFAULT_MUSIC_TRACKS }
+        .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), IAppSettingsDataStore.DEFAULT_MUSIC_TRACKS)
+
+    override val isMusicEnabled: StateFlow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.IS_MUSIC_ENABLED] ?: IAppSettingsDataStore.DEFAULT_IS_MUSIC_ENABLED }
+        .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), IAppSettingsDataStore.DEFAULT_IS_MUSIC_ENABLED)
+
+    override val musicVolume: StateFlow<Float> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.MUSIC_VOLUME] ?: IAppSettingsDataStore.DEFAULT_MUSIC_VOLUME }
+        .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), IAppSettingsDataStore.DEFAULT_MUSIC_VOLUME)
+
     init {
         externalScope.launch {
             isFirstTimeLaunch.first()
@@ -108,12 +128,12 @@ class RealAppSettingsDataStore(
         dataStore.edit { it[Keys.PLAYER_NAME] = name }
     }
 
-    override suspend fun saveSelectedCards(cards: Set<String>) {
-        dataStore.edit { it[Keys.SELECTED_CARDS] = cards }
-    }
-
     override suspend fun saveSelectedBackgrounds(backgrounds: Set<String>) {
         dataStore.edit { it[Keys.SELECTED_BACKGROUNDS] = backgrounds }
+    }
+
+    override suspend fun saveSelectedCards(cards: Set<String>) {
+        dataStore.edit { it[Keys.SELECTED_CARDS] = cards }
     }
 
     override suspend fun saveBoardDimensions(width: Int, height: Int) {
@@ -138,5 +158,17 @@ class RealAppSettingsDataStore(
                 .take(ScoreEntry.MAX_RANKING_ENTRIES)
             dataStore.edit { it[Keys.TOP_RANKING] = json.encodeToString(updatedRanking) }
         }
+    }
+
+    override suspend fun saveSelectedMusicTracks(trackNames: Set<String>) {
+        dataStore.edit { it[Keys.SELECTED_MUSIC_TRACK_NAMES] = trackNames }
+    }
+
+    override suspend fun saveIsMusicEnabled(isEnabled: Boolean) {
+        dataStore.edit { it[Keys.IS_MUSIC_ENABLED] = isEnabled }
+    }
+
+    override suspend fun saveMusicVolume(volume: Float) {
+        dataStore.edit { it[Keys.MUSIC_VOLUME] = volume }
     }
 }

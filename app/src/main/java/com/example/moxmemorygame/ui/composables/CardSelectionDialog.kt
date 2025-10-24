@@ -52,7 +52,6 @@ import com.example.moxmemorygame.R
 
 @Composable
 fun CardSelectionDialog(
-    showDialog: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     cardResourceNames: List<String>,
@@ -62,22 +61,20 @@ fun CardSelectionDialog(
     minRequired: Int,
     title: String
 ) {
-    if (showDialog) {
-        Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(dismissOnClickOutside = true, dismissOnBackPress = true)
-        ) {
-            CardSelectionDialogContent(
-                onDismiss = onDismiss,
-                onConfirm = onConfirm,
-                cardResourceNames = cardResourceNames,
-                selectedCards = selectedCards,
-                onCardSelectionChanged = onCardSelectionChanged,
-                onToggleSelectAll = onToggleSelectAll,
-                minRequired = minRequired,
-                title = title
-            )
-        }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnClickOutside = true, dismissOnBackPress = true)
+    ) {
+        CardSelectionDialogContent(
+            onDismiss = onDismiss,
+            onConfirm = onConfirm,
+            cardResourceNames = cardResourceNames,
+            selectedCards = selectedCards,
+            onCardSelectionChanged = onCardSelectionChanged,
+            onToggleSelectAll = onToggleSelectAll,
+            minRequired = minRequired,
+            title = title
+        )
     }
 }
 

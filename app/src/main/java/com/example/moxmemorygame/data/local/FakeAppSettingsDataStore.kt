@@ -31,6 +31,15 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     private val _isFirstTimeLaunch = MutableStateFlow(true)
     override val isFirstTimeLaunch: StateFlow<Boolean> = _isFirstTimeLaunch.asStateFlow()
 
+    private val _selectedMusicTrackNames = MutableStateFlow(IAppSettingsDataStore.DEFAULT_MUSIC_TRACKS)
+    override val selectedMusicTrackNames: StateFlow<Set<String>> = _selectedMusicTrackNames.asStateFlow()
+
+    private val _isMusicEnabled = MutableStateFlow(IAppSettingsDataStore.DEFAULT_IS_MUSIC_ENABLED)
+    override val isMusicEnabled: StateFlow<Boolean> = _isMusicEnabled.asStateFlow()
+
+    private val _musicVolume = MutableStateFlow(IAppSettingsDataStore.DEFAULT_MUSIC_VOLUME)
+    override val musicVolume: StateFlow<Float> = _musicVolume.asStateFlow()
+
     override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true)
 
     private var saveDelayMillis = 0L
@@ -75,5 +84,20 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     override suspend fun saveIsFirstTimeLaunch(isFirstTime: Boolean) {
         delay(saveDelayMillis)
         _isFirstTimeLaunch.value = isFirstTime
+    }
+
+    override suspend fun saveSelectedMusicTracks(trackNames: Set<String>) {
+        delay(saveDelayMillis)
+        _selectedMusicTrackNames.value = trackNames
+    }
+
+    override suspend fun saveIsMusicEnabled(isEnabled: Boolean) {
+        delay(saveDelayMillis)
+        _isMusicEnabled.value = isEnabled
+    }
+
+    override suspend fun saveMusicVolume(volume: Float) {
+        delay(saveDelayMillis)
+        _musicVolume.value = volume
     }
 }
