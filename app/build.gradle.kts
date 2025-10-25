@@ -90,15 +90,14 @@ dependencies {
     testImplementation("androidx.test:core-ktx:1.5.0")
     testImplementation("androidx.test.ext:junit-ktx:1.1.5")
     testImplementation("org.robolectric:robolectric:4.16")
-    testImplementation("androidx.navigation:navigation-testing:2.7.7")
-    testImplementation(libs.kotlinx.coroutines.test) // Ensure this is present
-    testImplementation("io.insert-koin:koin-test:3.4.0")
-    testImplementation("io.insert-koin:koin-test-junit4:3.4.0")
 
+    // AndroidTest Dependencies
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation("androidx.navigation:navigation-testing:2.7.7")
+    androidTestImplementation(libs.truth)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

@@ -6,5 +6,13 @@ plugins {
 }
 
 tasks.register("unitTests") {
+    group = "verification"
+    description = "Runs all unit tests in the project."
     dependsOn(":app:testDebugUnitTest")
+}
+
+tasks.register("instrumentationTests") {
+    group = "verification"
+    description = "Runs all Android instrumented tests."
+    dependsOn(":app:connectedDebugAndroidTest")
 }
