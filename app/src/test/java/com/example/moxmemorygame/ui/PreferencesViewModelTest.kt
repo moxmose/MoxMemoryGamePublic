@@ -60,6 +60,49 @@ class PreferencesViewModelTest {
     }
 
     @Test
+    fun saveIsMusicEnabled_savesToDataStore() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        val initialValue = fakeDataStore.isMusicEnabled.value
+        val newValue = !initialValue
+
+        // Act
+        viewModel.saveIsMusicEnabled(newValue)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(fakeDataStore.isMusicEnabled.value).isEqualTo(newValue)
+    }
+
+    @Test
+    fun saveMusicVolume_savesToDataStore() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        val newVolume = 0.75f
+
+        // Act
+        viewModel.saveMusicVolume(newVolume)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(fakeDataStore.musicVolume.value).isEqualTo(newVolume)
+    }
+
+    @Test
+    fun saveSelectedMusicTracks_savesToDataStore() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        val newTracks = setOf("track1", "track2")
+
+        // Act
+        viewModel.saveSelectedMusicTracks(newTracks)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(fakeDataStore.selectedMusicTrackNames.value).isEqualTo(newTracks)
+    }
+
+    @Test
     fun init_whenSelectedCardsAreInsufficient_loadsDefaultCards() = runTest(testDispatcher) {
         // Arrange
         val boardWidth = 4
