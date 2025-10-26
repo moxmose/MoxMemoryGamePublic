@@ -2,6 +2,8 @@ package com.example.moxmemorygame.ui.screens
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -131,6 +133,88 @@ class PreferencesScreenTest {
         // 4. Assert that the error is shown and the dimensions were not saved
         assertThat(viewModel.boardDimensionError.value).isNotNull()
         assertThat(fakeDataStore.selectedBoardWidth.value).isEqualTo(initialWidth) // Verify it did not change
+    }
+
+    @Test
+    fun cardSelection_disablesConfirmWhenNotEnoughCards() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val initialWidth = 3
+        val initialHeight = 4
+        val minRequired = (initialWidth * initialHeight) / 2 // 6
+        val initialCards = (1..minRequired).map { "img_c_%02d".format(it) }.toSet()
+        val totalRefinedCards = 20
+
+        // 1. Set up initial state with a valid number of cards
+        fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
+        fakeDataStore.saveSelectedCards(initialCards)
+
+        // 2. Create ViewModel and compose UI
+        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        composeTestRule.setContent {
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
+        }
+        composeTestRule.waitForIdle()
+
+        // 3. Open the dialog
+        val buttonText = context.getString(R.string.preferences_button_select_refined_cards, initialCards.size, totalRefinedCards)
+        composeTestRule.onNodeWithText(buttonText).performScrollTo().performClick()
+
+        // 4. Find the confirm button and verify it's initially enabled
+        val okButtonNode = composeTestRule.onNodeWithText(context.getString(R.string.button_ok))
+        okButtonNode.assertIsEnabled()
+
+        // 5. Interact to create an invalid state (less than 6 cards)
+        composeTestRule.onNodeWithText("Refined 1").performClick() // Deselect, now has 5 cards
+
+        // 6. Wait for recomposition
+        composeTestRule.waitForIdle()
+
+        // 7. Assert that the OK button is now disabled
+        okButtonNode.assertIsNotEnabled()
+    }
+
+    @Test
+    fun cardSelection_canBeUpdatedCorrectly() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val initialWidth = 3
+        val initialHeight = 4
+        val initialCards = (1..6).map { "img_c_%02d".format(it) }.toSet()
+        val totalRefinedCards = 20
+
+        // 1. Set up initial state
+        fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
+        fakeDataStore.saveSelectedCards(initialCards)
+
+        // 2. Create ViewModel and compose UI
+        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        composeTestRule.setContent {
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
+        }
+        composeTestRule.waitForIdle()
+
+        // 3. Open the dialog
+        val buttonText = context.getString(R.string.preferences_button_select_refined_cards, initialCards.size, totalRefinedCards)
+        composeTestRule.onNodeWithText(buttonText).performScrollTo().performClick()
+
+        // 4. Interact and verify the dialog title changes, removing ambiguity
+        composeTestRule.onNodeWithText("Refined 1").performClick() // Deselect
+        val newDialogTitle = context.getString(R.string.preferences_button_select_refined_cards, 5, totalRefinedCards)
+        composeTestRule.onNodeWithText(newDialogTitle).assertIsDisplayed() // Assert the new, unique title
+
+        // 5. Continue interaction
+        composeTestRule.onNodeWithText("Refined 7").performClick() // Select
+        composeTestRule.onNodeWithText(context.getString(R.string.button_ok)).performClick()
+
+        // 6. CRUCIAL: Confirm selections to trigger the save action
+        viewModel.confirmCardSelections()
+        composeTestRule.waitForIdle()
+
+        // 7. Assert the final state was saved correctly
+        val expectedCards = initialCards.toMutableSet().apply {
+            remove("img_c_01")
+            add("img_c_07")
+        }.toSet()
+        assertThat(fakeDataStore.selectedCards.value).isEqualTo(expectedCards)
     }
 
     @Test
