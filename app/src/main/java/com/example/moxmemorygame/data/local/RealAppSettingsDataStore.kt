@@ -53,6 +53,8 @@ class RealAppSettingsDataStore(
         val SELECTED_MUSIC_TRACK_NAMES = stringSetPreferencesKey("selected_music_track_names")
         val IS_MUSIC_ENABLED = booleanPreferencesKey("is_music_enabled")
         val MUSIC_VOLUME = floatPreferencesKey("music_volume")
+        val ARE_SOUND_EFFECTS_ENABLED = booleanPreferencesKey("are_sound_effects_enabled")
+        val SOUND_EFFECTS_VOLUME = floatPreferencesKey("sound_effects_volume")
     }
 
     private val _isDataLoaded = MutableStateFlow(false)
@@ -117,6 +119,17 @@ class RealAppSettingsDataStore(
         .map { it[Keys.MUSIC_VOLUME] ?: IAppSettingsDataStore.DEFAULT_MUSIC_VOLUME }
         .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), IAppSettingsDataStore.DEFAULT_MUSIC_VOLUME)
 
+    override val areSoundEffectsEnabled: StateFlow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.ARE_SOUND_EFFECTS_ENABLED] ?: IAppSettingsDataStore.DEFAULT_ARE_SOUND_EFFECTS_ENABLED }
+        .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), IAppSettingsDataStore.DEFAULT_ARE_SOUND_EFFECTS_ENABLED)
+
+    override val soundEffectsVolume: StateFlow<Float> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.SOUND_EFFECTS_VOLUME] ?: IAppSettingsDataStore.DEFAULT_SOUND_EFFECTS_VOLUME }
+        .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), IAppSettingsDataStore.DEFAULT_SOUND_EFFECTS_VOLUME)
+
+
     init {
         externalScope.launch {
             isFirstTimeLaunch.first()
@@ -170,5 +183,13 @@ class RealAppSettingsDataStore(
 
     override suspend fun saveMusicVolume(volume: Float) {
         dataStore.edit { it[Keys.MUSIC_VOLUME] = volume }
+    }
+
+    override suspend fun saveAreSoundEffectsEnabled(isEnabled: Boolean) {
+        dataStore.edit { it[Keys.ARE_SOUND_EFFECTS_ENABLED] = isEnabled }
+    }
+
+    override suspend fun saveSoundEffectsVolume(volume: Float) {
+        dataStore.edit { it[Keys.SOUND_EFFECTS_VOLUME] = volume }
     }
 }

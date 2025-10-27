@@ -40,6 +40,12 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     private val _musicVolume = MutableStateFlow(IAppSettingsDataStore.DEFAULT_MUSIC_VOLUME)
     override val musicVolume: StateFlow<Float> = _musicVolume.asStateFlow()
 
+    private val _areSoundEffectsEnabled = MutableStateFlow(IAppSettingsDataStore.DEFAULT_ARE_SOUND_EFFECTS_ENABLED)
+    override val areSoundEffectsEnabled: StateFlow<Boolean> = _areSoundEffectsEnabled.asStateFlow()
+
+    private val _soundEffectsVolume = MutableStateFlow(IAppSettingsDataStore.DEFAULT_SOUND_EFFECTS_VOLUME)
+    override val soundEffectsVolume: StateFlow<Float> = _soundEffectsVolume.asStateFlow()
+
     override val isDataLoaded: StateFlow<Boolean> = MutableStateFlow(true)
 
     private var saveDelayMillis = 0L
@@ -99,5 +105,15 @@ class FakeAppSettingsDataStore : IAppSettingsDataStore {
     override suspend fun saveMusicVolume(volume: Float) {
         delay(saveDelayMillis)
         _musicVolume.value = volume
+    }
+
+    override suspend fun saveAreSoundEffectsEnabled(isEnabled: Boolean) {
+        delay(saveDelayMillis)
+        _areSoundEffectsEnabled.value = isEnabled
+    }
+
+    override suspend fun saveSoundEffectsVolume(volume: Float) {
+        delay(saveDelayMillis)
+        _soundEffectsVolume.value = volume
     }
 }

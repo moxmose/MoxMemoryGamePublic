@@ -11,9 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -35,15 +39,16 @@ import com.example.moxmemorygame.model.BackgroundMusic
 fun MusicSelectionDialog(
     onDismiss: () -> Unit,
     onConfirm: (Set<String>) -> Unit,
+    onPlayPreview: (BackgroundMusic) -> Unit,
     allTracks: List<BackgroundMusic>,
     initialSelection: Set<String>
 ) {
     var currentSelection by remember { mutableStateOf(initialSelection) }
-    val allTrackNames = remember { allTracks.map { it.trackName }.toSet() }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+            // Consistent shape with other dialogs
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 0.dp, bottomStart = 0.dp, bottomEnd = 16.dp),
             modifier = Modifier.padding(16.dp)
         ) {
             Column(
@@ -61,19 +66,14 @@ fun MusicSelectionDialog(
 
                 OutlinedButton(
                     onClick = {
-                        if (currentSelection == allTrackNames) {
-                            currentSelection = emptySet()
-                        } else {
-                            currentSelection = allTrackNames
-                        }
+                        onConfirm(emptySet())
+                        onDismiss()
                     },
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                    // Consistent shape
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 0.dp, bottomStart = 0.dp, bottomEnd = 16.dp),
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.dialog_select_deselect_all),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(stringResource(R.string.preferences_music_selection_none))
                 }
 
                 LazyColumn(modifier = Modifier.weight(1f)) {
@@ -108,8 +108,11 @@ fun MusicSelectionDialog(
                                 )
                                 Text(
                                     text = track.displayName,
-                                    modifier = Modifier.padding(start = 8.dp)
+                                    modifier = Modifier.padding(start = 8.dp).weight(1f)
                                 )
+                                IconButton(onClick = { onPlayPreview(track) }) {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.preferences_music_preview_button_description, track.displayName))
+                                }
                             }
                         }
                     }
@@ -117,15 +120,14 @@ fun MusicSelectionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Removed "Cancel" button and made "OK" button full width
                 Button(
                     onClick = { onConfirm(currentSelection) },
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                    // Consistent shape
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 0.dp, bottomStart = 0.dp, bottomEnd = 16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = stringResource(R.string.button_ok),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(stringResource(R.string.button_ok))
                 }
             }
         }

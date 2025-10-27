@@ -20,6 +20,8 @@ interface IAppSettingsDataStore {
         val DEFAULT_MUSIC_TRACKS: Set<String> = BackgroundMusic.allTrackNames
         const val DEFAULT_IS_MUSIC_ENABLED = true
         const val DEFAULT_MUSIC_VOLUME = 0.3f
+        const val DEFAULT_ARE_SOUND_EFFECTS_ENABLED = true
+        const val DEFAULT_SOUND_EFFECTS_VOLUME = 0.7f
     }
 
     val playerName: StateFlow<String>
@@ -34,6 +36,8 @@ interface IAppSettingsDataStore {
     val selectedMusicTrackNames: StateFlow<Set<String>>
     val isMusicEnabled: StateFlow<Boolean>
     val musicVolume: StateFlow<Float>
+    val areSoundEffectsEnabled: StateFlow<Boolean>
+    val soundEffectsVolume: StateFlow<Float>
 
     suspend fun savePlayerName(name: String)
     suspend fun saveSelectedBackgrounds(backgrounds: Set<String>)
@@ -44,4 +48,6 @@ interface IAppSettingsDataStore {
     suspend fun saveSelectedMusicTracks(trackNames: Set<String>)
     suspend fun saveIsMusicEnabled(isEnabled: Boolean)
     suspend fun saveMusicVolume(volume: Float)
+    suspend fun saveAreSoundEffectsEnabled(isEnabled: Boolean)
+    suspend fun saveSoundEffectsVolume(volume: Float)
 }

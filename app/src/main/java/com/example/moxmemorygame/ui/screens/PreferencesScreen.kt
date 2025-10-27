@@ -29,6 +29,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +48,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.model.BackgroundMusic
+import com.example.moxmemorygame.ui.BackgroundMusicManager
 import com.example.moxmemorygame.ui.PreferencesViewModel
 import com.example.moxmemorygame.ui.composables.BackgroundImg
 import com.example.moxmemorygame.ui.composables.BackgroundSelectionDialog
@@ -81,6 +84,10 @@ fun PreferencesScreen(
     val isMusicEnabled by preferencesViewModel.isMusicEnabled.collectAsState()
     val musicVolume by preferencesViewModel.musicVolume.collectAsState()
     val selectedMusicTrackNames by preferencesViewModel.selectedMusicTrackNames.collectAsState()
+
+    // SFX states
+    val areSfxEnabled by preferencesViewModel.areSoundEffectsEnabled.collectAsState()
+    val sfxVolume by preferencesViewModel.soundEffectsVolume.collectAsState()
 
     var tempPlayerName by remember(playerName) { mutableStateOf(playerName) }
     var showBackgroundDialog by remember { mutableStateOf(false) }
@@ -202,14 +209,23 @@ fun PreferencesScreen(
 
     if (showMusicDialog) {
         MusicSelectionDialog(
-            onDismiss = { showMusicDialog = false },
+            onDismiss = { 
+                preferencesViewModel.stopMusicPreview()
+                showMusicDialog = false 
+            },
             onConfirm = { trackNames ->
                 preferencesViewModel.saveSelectedMusicTracks(trackNames)
                 showMusicDialog = false
             },
+            onPlayPreview = { track -> preferencesViewModel.playMusicPreview(track) },
             allTracks = BackgroundMusic.allTracks,
             initialSelection = selectedMusicTrackNames
         )
+        DisposableEffect(Unit) {
+            onDispose {
+                preferencesViewModel.stopMusicPreview()
+            }
+        }
     }
 
     // --- MAIN UI ---
@@ -304,6 +320,15 @@ fun PreferencesScreen(
                             onSelectTracksClicked = { showMusicDialog = true }
                         )
                     }
+                    
+                    item {
+                        SoundEffectsPreferencesSection(
+                            areSfxEnabled = areSfxEnabled,
+                            onSfxEnabledChange = { preferencesViewModel.saveAreSoundEffectsEnabled(it) },
+                            sfxVolume = sfxVolume,
+                            onSfxVolumeChange = { preferencesViewModel.saveSoundEffectsVolume(it) }
+                        )
+                    }
 
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -381,21 +406,66 @@ fun MusicPreferencesSection(
     }
 }
 
+@Composable
+fun SoundEffectsPreferencesSection(
+    areSfxEnabled: Boolean,
+    onSfxEnabledChange: (Boolean) -> Unit,
+    sfxVolume: Float,
+    onSfxVolumeChange: (Float) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.preferences_sfx_settings_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(stringResource(R.string.preferences_sfx_enable_label), style = MaterialTheme.typography.bodyLarge)
+            Switch(checked = areSfxEnabled, onCheckedChange = onSfxEnabledChange)
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.preferences_sfx_volume_label, (sfxVolume * 100).roundToInt()), style = MaterialTheme.typography.bodyLarge)
+            Slider(
+                value = sfxVolume,
+                onValueChange = onSfxVolumeChange,
+                valueRange = 0f..1f,
+                enabled = areSfxEnabled
+            )
+        }
+    }
+}
+
 
 @SuppressLint("ComposableViewModelCreation", "UnrememberedMutableState")
 @Preview(showBackground = true)
 @Composable
 fun PreferencesScreenPreview() {
     val fakeDataStore = FakeAppSettingsDataStore()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         fakeDataStore.savePlayerName("Preview Player")
         fakeDataStore.saveSelectedBackgrounds(setOf("background_01", "background_02"))
     }
 
+    val fakeMusicManager = BackgroundMusicManager(
+        context = context,
+        appSettingsDataStore = fakeDataStore,
+        externalScope = scope
+    )
+
     val fakeViewModel = PreferencesViewModel(
         navController = rememberNavController(),
-        appSettingsDataStore = fakeDataStore
+        appSettingsDataStore = fakeDataStore,
+        backgroundMusicManager = fakeMusicManager
     )
 
     MaterialTheme {

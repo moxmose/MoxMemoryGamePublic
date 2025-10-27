@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+import com.example.moxmemorygame.model.BackgroundMusic
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 
 class PreferencesViewModel(
     private val navController: NavHostController,
-    val appSettingsDataStore: IAppSettingsDataStore // Made public for direct access from the UI
+    val appSettingsDataStore: IAppSettingsDataStore,
+    private val backgroundMusicManager: BackgroundMusicManager
 ) : ViewModel() {
 
     val playerName: StateFlow<String> = appSettingsDataStore.playerName
@@ -49,10 +51,15 @@ class PreferencesViewModel(
     val musicVolume: StateFlow<Float> = appSettingsDataStore.musicVolume
     val selectedMusicTrackNames: StateFlow<Set<String>> = appSettingsDataStore.selectedMusicTrackNames
 
+    // Sound Effects Preferences
+    val areSoundEffectsEnabled: StateFlow<Boolean> = appSettingsDataStore.areSoundEffectsEnabled
+    val soundEffectsVolume: StateFlow<Float> = appSettingsDataStore.soundEffectsVolume
+
     private var lastSaveCardsJob: Job? = null
     private var lastSaveBackgroundsJob: Job? = null
     private var lastSaveDimensionsJob: Job? = null
     private var lastSaveMusicJob: Job? = null
+    private var lastSaveSfxJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -191,6 +198,8 @@ class PreferencesViewModel(
             lastSaveCardsJob?.join()
             lastSaveDimensionsJob?.join()
             lastSaveMusicJob?.join()
+            lastSaveSfxJob?.join()
+            backgroundMusicManager.stopPreview() // Ensure preview is stopped
             navController.popBackStack()
         }
     }
@@ -211,6 +220,31 @@ class PreferencesViewModel(
         lastSaveMusicJob = viewModelScope.launch {
             appSettingsDataStore.saveSelectedMusicTracks(trackNames)
         }
+    }
+
+    fun saveAreSoundEffectsEnabled(isEnabled: Boolean) {
+        lastSaveSfxJob = viewModelScope.launch {
+            appSettingsDataStore.saveAreSoundEffectsEnabled(isEnabled)
+        }
+    }
+
+    fun saveSoundEffectsVolume(volume: Float) {
+        lastSaveSfxJob = viewModelScope.launch {
+            appSettingsDataStore.saveSoundEffectsVolume(volume)
+        }
+    }
+
+    fun playMusicPreview(track: BackgroundMusic) {
+        backgroundMusicManager.playPreview(track)
+    }
+
+    fun stopMusicPreview() {
+        backgroundMusicManager.stopPreview()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        backgroundMusicManager.stopPreview()
     }
 
     companion object {

@@ -15,4 +15,9 @@ sealed class SoundEvent(@RawRes val resId: Int) {
     object Win : SoundEvent(R.raw.brass_fanfare_with_timpani_and_winchimes_reverberated)
     object Pause : SoundEvent(R.raw.keyswipe_card)
     object Reset : SoundEvent(R.raw.card_mixing)
+
+    companion object {
+        // A list of all sound events, used to preload them into the SoundPool.
+        val allEvents = listOf(Flip, Success, Fail, Win, Pause, Reset)
+    }
 }

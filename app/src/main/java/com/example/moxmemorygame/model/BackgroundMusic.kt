@@ -50,5 +50,14 @@ sealed class BackgroundMusic(val trackName: String, val displayName: String, @Ra
         fun fromTrackName(trackName: String?): BackgroundMusic {
             return allTracks.find { it.trackName == trackName } ?: None
         }
+        
+        /**
+         * Finds a BackgroundMusic instance by its resource ID.
+         * @param resId The raw resource ID to find.
+         * @return The corresponding [BackgroundMusic] object, or [None] if not found.
+         */
+        fun fromResId(resId: Int): BackgroundMusic {
+            return allTracks.find { it.resId == resId } ?: None
+        }
     }
 }

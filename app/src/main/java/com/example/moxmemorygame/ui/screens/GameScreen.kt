@@ -17,7 +17,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,17 +34,17 @@ import com.example.moxmemorygame.ui.composables.ShowTablePlay
 import com.example.moxmemorygame.ui.composables.Tail
 import com.example.moxmemorygame.ui.formatDuration
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @Composable
 fun GameScreen(
     innerPadding: PaddingValues, 
     modifier: Modifier = Modifier, 
-    gameViewModel: GameViewModel = koinViewModel()
+    gameViewModel: GameViewModel = koinViewModel(),
+    soundUtils: SoundUtils = koinInject()
 ) {
-    val localSoundContext = LocalContext.current
-    
-    val onSoundEvent: (SoundEvent) -> Unit = {
-        SoundUtils.playSound(localSoundContext, it.resId)
+    val onSoundEvent: (SoundEvent) -> Unit = { event ->
+        soundUtils.playSound(event.resId)
     }
 
     val currentTablePlay = gameViewModel.tablePlay 

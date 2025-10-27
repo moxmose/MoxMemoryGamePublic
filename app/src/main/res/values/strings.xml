@@ -30,13 +30,17 @@
     <string name="preferences_board_width">Width: %1$d</string>
     <string name="preferences_board_height">Height: %1$d</string>
     <string name="preferences_board_current_size">Current Size: %1$dx%2$d</string>
-    <string name="preferences_music_settings_title">MUSIC SETTINGS</string>
-    <string name="preferences_music_enable_label">Enable Music</string>
+    <string name="preferences_music_settings_title">BACKGROUND MUSIC SETTINGS</string>
+    <string name="preferences_music_enable_label">Enable Background Music</string>
     <string name="preferences_music_volume_label">Volume: %1$d%%</string>
     <string name="preferences_button_select_music_tracks">SELECT MUSIC TRACKS
 (%1$d selected)</string>
     <string name="preferences_music_selection_dialog_title">Select Music Tracks</string>
     <string name="preferences_music_selection_none">None (no music)</string>
+    <string name="preferences_music_preview_button_description">Play preview for %1$s</string>
+    <string name="preferences_sfx_settings_title">SOUND EFFECTS SETTINGS</string>
+    <string name="preferences_sfx_enable_label">Enable Sound Effects</string>
+    <string name="preferences_sfx_volume_label">Volume: %1$d%%</string>
 
     <!-- Card Types -->
     <string name="card_type_refined">Refined</string>
@@ -82,6 +86,5 @@
     <string name="game_error_images_not_loaded">Error: Card images not loaded for ShowTablePlay.</string>
     <string name="card_name_refined">Refined %1$s</string>
     <string name="card_name_simple">Simple %1$s</string>
-    <string name="preferences_music_selection_toggle_all">Select/Deselect ALL</string>
 
 </resources>

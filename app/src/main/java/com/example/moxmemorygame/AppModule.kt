@@ -10,6 +10,7 @@ import com.example.moxmemorygame.ui.GameViewModel
 import com.example.moxmemorygame.ui.NavigationManager
 import com.example.moxmemorygame.ui.OpeningMenuViewModel
 import com.example.moxmemorygame.ui.PreferencesViewModel
+import com.example.moxmemorygame.ui.SoundUtils
 import com.example.moxmemorygame.ui.TimerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +37,13 @@ val myAppModule = module {
         )
     }
 
+    single { SoundUtils(androidContext(), get()) }
+
     viewModel { (navController: NavHostController) ->
         GameViewModel(
             navController = navController,
             timerViewModel = get(),
-            appSettingsDataStore = get(), // This get() will now receive the correct instance
+            appSettingsDataStore = get(),
             resourceNameToId = { resourceName ->
                 try {
                     androidContext().resources.getIdentifier(
@@ -59,14 +62,15 @@ val myAppModule = module {
     viewModel { (navController: NavHostController) ->
         PreferencesViewModel(
             navController = navController,
-            appSettingsDataStore = get() // This get() will also receive the correct instance
+            appSettingsDataStore = get(),
+            backgroundMusicManager = get()
         )
     }
 
     viewModel { (navController: NavHostController) ->
         OpeningMenuViewModel(
             navController = navController,
-            appSettingsDataStore = get() // And this one too
+            appSettingsDataStore = get()
         )
     }
 }
