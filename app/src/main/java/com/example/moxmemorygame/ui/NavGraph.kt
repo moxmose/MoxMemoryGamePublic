@@ -33,7 +33,7 @@ fun NavGraph(
             val viewModel: OpeningMenuViewModel = koinViewModel {
                 parametersOf(navController)
             }
-            OpeningMenuScreen(viewModel, innerPadding)
+            OpeningMenuScreen(openingMenuViewModel = viewModel, innerPadding = innerPadding)
         }
 
         composable(Screen.PreferencesScreen.route) {

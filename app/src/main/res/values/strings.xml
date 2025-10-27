@@ -30,7 +30,7 @@
     <string name="preferences_board_width">Width: %1$d</string>
     <string name="preferences_board_height">Height: %1$d</string>
     <string name="preferences_board_current_size">Current Size: %1$dx%2$d</string>
-    <string name="preferences_music_settings_title">BACKGROUND MUSIC SETTINGS</string>
+    <string name="preferences_music_settings_title">BACKGROUND MUSIC SETTINGSMUSIC SETTINGS</string>
     <string name="preferences_music_enable_label">Enable Background Music</string>
     <string name="preferences_music_volume_label">Volume: %1$d%%</string>
     <string name="preferences_button_select_music_tracks">SELECT MUSIC TRACKS
@@ -51,6 +51,8 @@
     <string name="background_selection_dialog_title">Select Backgrounds</string>
     <string name="image_preview_dialog_image_not_found">Image not found</string>
     <string name="image_preview_dialog_content_description">Preview %1$s</string>
+    <string name="about_dialog_title">About Mox Memory Game</string>
+    <string name="about_dialog_content">This is a classic memory game where you have to find all the pairs of cards. Developed with love and Jetpack Compose.</string>
 
     <!-- Common Dialog/Button Strings -->
     <string name="dialog_click_image_to_preview">(Click image to preview)</string>
