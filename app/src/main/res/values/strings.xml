@@ -30,7 +30,7 @@
     <string name="preferences_board_width">Width: %1$d</string>
     <string name="preferences_board_height">Height: %1$d</string>
     <string name="preferences_board_current_size">Current Size: %1$dx%2$d</string>
-    <string name="preferences_music_settings_title">BACKGROUND MUSIC SETTINGSMUSIC SETTINGS</string>
+    <string name="preferences_music_settings_title">MUSIC SETTINGS</string>
     <string name="preferences_music_enable_label">Enable Background Music</string>
     <string name="preferences_music_volume_label">Volume: %1$d%%</string>
     <string name="preferences_button_select_music_tracks">SELECT MUSIC TRACKS
@@ -52,7 +52,10 @@
     <string name="image_preview_dialog_image_not_found">Image not found</string>
     <string name="image_preview_dialog_content_description">Preview %1$s</string>
     <string name="about_dialog_title">About Mox Memory Game</string>
-    <string name="about_dialog_content">This is a classic memory game where you have to find all the pairs of cards. Developed with love and Jetpack Compose.</string>
+    <string name="about_dialog_content">This is a classic memory game where you have to find all the pairs of cards.\n
+Developed with and for Jetpack Compose, with my abilities for the skeleton and the game\'s working code, using the help of AI for free contents (Copilot for graphics, MusicGPT for music) and massively for refactoring and testing (Gemini who provided constant help and worked a lot), plus free sounds found on the web.\n
+The code is freely available on GitHub under a standard GPL license.\n
+Mox 2025 - v1.0</string>
 
     <!-- Common Dialog/Button Strings -->
     <string name="dialog_click_image_to_preview">(Click image to preview)</string>
@@ -80,7 +83,8 @@
     <string name="game_background_default_error_description">Default background due to error</string>
     <string name="game_card_content_description_back">Card back</string>
     <string name="game_card_content_description_face">Game card face</string>
-    <string name="preferences_scroll_down_indicator">Scroll\nDown</string>
+    <string name="preferences_scroll_down_indicator">Scroll
+Down</string>
     <string name="game_loading_board">Loading game board...</string>
     <string name="game_error_board_null">Error: Board not available. Please reset.</string>
     <string name="game_dialog_finished_title">FINISHED!</string>
