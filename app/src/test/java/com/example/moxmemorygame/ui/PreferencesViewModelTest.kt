@@ -72,6 +72,76 @@ class PreferencesViewModelTest {
     }
 
     @Test
+    fun updatePlayerName_whenNameIsValid_savesToDataStore() = runTest(testDispatcher) {
+        // 1. Arrange
+        initViewModel()
+        val initialName = "Player1"
+        fakeDataStore.savePlayerName(initialName)
+        advanceUntilIdle()
+
+        // 2. Act
+        val newName = "NewPlayer"
+        viewModel.updatePlayerName(newName)
+        advanceUntilIdle()
+
+        // 3. Assert
+        assertThat(fakeDataStore.playerName.value).isEqualTo(newName)
+    }
+
+    @Test
+    fun updatePlayerName_whenNameIsTooLong_isIgnored() = runTest(testDispatcher) {
+        // 1. Arrange
+        initViewModel()
+        val initialName = "Player1"
+        fakeDataStore.savePlayerName(initialName)
+        advanceUntilIdle()
+
+        // 2. Act
+        val longName = "a".repeat(PreferencesViewModel.PLAYERNAME_MAX_LENGTH + 1)
+        viewModel.updatePlayerName(longName)
+        advanceUntilIdle()
+
+        // 3. Assert
+        assertThat(fakeDataStore.playerName.value).isEqualTo(initialName)
+    }
+
+    @Test
+    fun getCardDisplayName_returnsFormattedName() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+
+        // Act & Assert
+        val refinedName = viewModel.getCardDisplayName("img_c_05")
+        assertThat(refinedName).isEqualTo("Refined 5")
+
+        val simpleName = viewModel.getCardDisplayName("img_s_08")
+        assertThat(simpleName).isEqualTo("Simple 8")
+
+        val unknownName = viewModel.getCardDisplayName("unknown_resource")
+        assertThat(unknownName).isEqualTo("unknown_resource")
+    }
+
+    @Test
+    fun clearCardSelectionError_clearsTheError() = runTest(testDispatcher) {
+        // Arrange: first, create an error state
+        initViewModel()
+        fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
+        advanceUntilIdle()
+        viewModel.prepareForCardSelection()
+        // Clean the state and create an invalid selection
+        viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), false)
+        viewModel.updateCardSelection("img_c_01", true) // select only 1 card
+        viewModel.confirmCardSelections()
+        assertThat(viewModel.cardSelectionError.value).isNotNull()
+
+        // Act
+        viewModel.clearCardSelectionError()
+
+        // Assert
+        assertThat(viewModel.cardSelectionError.value).isNull()
+    }
+
+    @Test
     fun saveIsMusicEnabled_savesToDataStore() = runTest(testDispatcher) {
         // Arrange
         initViewModel()
@@ -212,6 +282,21 @@ class PreferencesViewModelTest {
 
         // Assert
         assertThat(viewModel.boardDimensionError.value).isNotNull()
+    }
+
+    @Test
+    fun clearBoardDimensionError_clearsTheError() = runTest(testDispatcher) {
+        // Arrange: first, create an error state
+        initViewModel()
+        viewModel.updateBoardDimensions(PreferencesViewModel.MIN_BOARD_WIDTH - 1, 4) // Trigger error
+        advanceUntilIdle()
+        assertThat(viewModel.boardDimensionError.value).isNotNull() // Pre-condition check
+
+        // Act
+        viewModel.clearBoardDimensionError()
+
+        // Assert
+        assertThat(viewModel.boardDimensionError.value).isNull()
     }
 
 
