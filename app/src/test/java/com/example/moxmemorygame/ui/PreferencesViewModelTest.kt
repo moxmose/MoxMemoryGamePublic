@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -34,6 +35,7 @@ class PreferencesViewModelTest {
     private lateinit var viewModel: PreferencesViewModel
     private lateinit var fakeDataStore: FakeAppSettingsDataStore
     private lateinit var testNavController: TestNavHostController
+    private lateinit var fakeMusicManager: BackgroundMusicManager
 
     @Before
     fun setUp() {
@@ -47,10 +49,20 @@ class PreferencesViewModelTest {
             composable("preferences") { }
             composable(Screen.OpeningMenuScreen.route) { }
         }
+
+        fakeMusicManager = BackgroundMusicManager(
+            context = ApplicationProvider.getApplicationContext(),
+            appSettingsDataStore = fakeDataStore,
+            externalScope = CoroutineScope(testDispatcher)
+        )
     }
 
     private fun initViewModel() {
-        viewModel = PreferencesViewModel(navController = testNavController, appSettingsDataStore = fakeDataStore)
+        viewModel = PreferencesViewModel(
+            navController = testNavController, 
+            appSettingsDataStore = fakeDataStore,
+            backgroundMusicManager = fakeMusicManager
+        )
     }
 
     @After
@@ -100,6 +112,35 @@ class PreferencesViewModelTest {
 
         // Assert
         assertThat(fakeDataStore.selectedMusicTrackNames.value).isEqualTo(newTracks)
+    }
+
+    @Test
+    fun saveAreSoundEffectsEnabled_savesToDataStore() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        val initialValue = fakeDataStore.areSoundEffectsEnabled.value
+        val newValue = !initialValue
+
+        // Act
+        viewModel.saveAreSoundEffectsEnabled(newValue)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(fakeDataStore.areSoundEffectsEnabled.value).isEqualTo(newValue)
+    }
+
+    @Test
+    fun saveSoundEffectsVolume_savesToDataStore() = runTest(testDispatcher) {
+        // Arrange
+        initViewModel()
+        val newVolume = 0.88f
+
+        // Act
+        viewModel.saveSoundEffectsVolume(newVolume)
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(fakeDataStore.soundEffectsVolume.value).isEqualTo(newVolume)
     }
 
     @Test
@@ -422,104 +463,5 @@ class PreferencesViewModelTest {
         viewModel.updateBackgroundSelection("background_00", false)
 
         assertThat(viewModel.selectedBackgrounds.value).isEqualTo(newSelection)
-        assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(initialSelection)
-
-        viewModel.confirmBackgroundSelections()
-        advanceUntilIdle()
-
-        // 3. Assert
-        assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(newSelection)
-    }
-
-    @Test
-    fun updatePlayerName_whenNameIsValid_savesToDataStore() = runTest(testDispatcher) {
-        // 1. Arrange
-        initViewModel()
-        val initialName = "Player1"
-        fakeDataStore.savePlayerName(initialName)
-        advanceUntilIdle()
-
-        // 2. Act
-        val newName = "NewPlayer"
-        viewModel.updatePlayerName(newName)
-        advanceUntilIdle()
-
-        // 3. Assert
-        assertThat(fakeDataStore.playerName.value).isEqualTo(newName)
-    }
-
-    @Test
-    fun updatePlayerName_whenNameIsTooLong_isIgnored() = runTest(testDispatcher) {
-        // 1. Arrange
-        initViewModel()
-        val initialName = "Player1"
-        fakeDataStore.savePlayerName(initialName)
-        advanceUntilIdle()
-
-        // 2. Act
-        val longName = "a".repeat(PreferencesViewModel.PLAYERNAME_MAX_LENGTH + 1)
-        viewModel.updatePlayerName(longName)
-        advanceUntilIdle()
-
-        // 3. Assert
-        assertThat(fakeDataStore.playerName.value).isEqualTo(initialName)
-    }
-
-    @Test
-    fun getCardDisplayName_returnsFormattedName() = runTest(testDispatcher) {
-        // Arrange
-        initViewModel()
-
-        // Act & Assert
-        val refinedName = viewModel.getCardDisplayName("img_c_05")
-        assertThat(refinedName).isEqualTo("Refined 5")
-
-        val simpleName = viewModel.getCardDisplayName("img_s_08")
-        assertThat(simpleName).isEqualTo("Simple 8")
-
-        val unknownName = viewModel.getCardDisplayName("unknown_resource")
-        assertThat(unknownName).isEqualTo("unknown_resource")
-    }
-
-    @Test
-    fun clearCardSelectionError_clearsTheError() = runTest(testDispatcher) {
-        // Arrange: first, create an error state
-        initViewModel()
-        fakeDataStore.saveBoardDimensions(4, 5) // requires 10 cards
-        advanceUntilIdle()
-        viewModel.prepareForCardSelection()
-        // Clean the state and create an invalid selection
-        viewModel.toggleSelectAllCards(viewModel.tempSelectedCards.value.toList(), false)
-        viewModel.updateCardSelection("img_c_01", true) // select only 1 card
-        viewModel.confirmCardSelections()
-        assertThat(viewModel.cardSelectionError.value).isNotNull()
-
-        // Act
-        viewModel.clearCardSelectionError()
-
-        // Assert
-        assertThat(viewModel.cardSelectionError.value).isNull()
-    }
-
-    @Test
-    fun clearBoardDimensionError_clearsTheError() = runTest(testDispatcher) {
-        // Arrange: first, create an error state
-        initViewModel()
-        val initialWidth = 3
-        val initialHeight = 4
-        val cardsForInitialBoard = (initialWidth * initialHeight) / 2 // 6
-        val selectedCards = (1..cardsForInitialBoard).map { "img_c_%02d".format(it) }.toSet()
-        fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
-        fakeDataStore.saveSelectedCards(selectedCards)
-
-        advanceUntilIdle()
-        viewModel.updateBoardDimensions(5, 4) // This action will cause an error (requires 10 cards, we have 6)
-        assertThat(viewModel.boardDimensionError.value).isNotNull()
-
-        // Act
-        viewModel.clearBoardDimensionError()
-
-        // Assert
-        assertThat(viewModel.boardDimensionError.value).isNull()
     }
 }

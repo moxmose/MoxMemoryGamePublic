@@ -2,6 +2,7 @@ package com.example.moxmemorygame.ui
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.util.Log
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
 import com.example.moxmemorygame.model.BackgroundMusic
 import kotlinx.coroutines.CoroutineScope
@@ -79,7 +80,20 @@ class BackgroundMusicManager(
         
         stopAndReleaseMainPlayer() // Ensure any old instance is gone
 
-        mainPlayer = MediaPlayer.create(context, musicTrack.resId).apply {
+        val player = try {
+            MediaPlayer.create(context, musicTrack.resId)
+        } catch (e: Exception) {
+            Log.e("MusicManager", "Failed to create MediaPlayer for resId ${musicTrack.resId}", e)
+            null
+        }
+
+        if (player == null) {
+            Log.e("MusicManager", "MediaPlayer.create returned null. Check resource validity.")
+            currentTrackResId = null
+            return
+        }
+
+        mainPlayer = player.apply {
             isLooping = false // We handle shuffle manually
             setVolume(volume, volume)
             setOnCompletionListener { onTrackCompleted() }
@@ -107,7 +121,20 @@ class BackgroundMusicManager(
             }
 
             stopAndReleasePreviewPlayer()
-            previewPlayer = MediaPlayer.create(context, track.resId).apply {
+            
+            val player = try {
+                MediaPlayer.create(context, track.resId)
+            } catch (e: Exception) {
+                Log.e("MusicManager", "Failed to create preview MediaPlayer for resId ${track.resId}", e)
+                null
+            }
+
+            if (player == null) {
+                Log.e("MusicManager", "Preview MediaPlayer.create returned null.")
+                return@launch
+            }
+
+            previewPlayer = player.apply {
                 isLooping = false
                 val volume = appSettingsDataStore.musicVolume.first()
                 setVolume(volume, volume)
