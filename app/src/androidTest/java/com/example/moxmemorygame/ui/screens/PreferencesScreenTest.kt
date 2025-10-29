@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performGesture
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.swipeRight
@@ -18,8 +20,11 @@ import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
+import com.example.moxmemorygame.ui.BackgroundMusicManager
 import com.example.moxmemorygame.ui.PreferencesViewModel
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -34,14 +39,24 @@ class PreferencesScreenTest {
 
     private lateinit var fakeDataStore: FakeAppSettingsDataStore
     private lateinit var navController: TestNavHostController
+    private lateinit var fakeMusicManager: BackgroundMusicManager
 
     @Before
     fun setup() {
-        // Prepare objects that are identical for every test.
-        // The ViewModel is now created inside each test to ensure a clean state.
         fakeDataStore = FakeAppSettingsDataStore()
         navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+        fakeMusicManager = BackgroundMusicManager(
+            context = ApplicationProvider.getApplicationContext(),
+            appSettingsDataStore = fakeDataStore,
+            externalScope = CoroutineScope(Dispatchers.IO)
+        )
     }
+
+    private fun createViewModel() = PreferencesViewModel(
+        navController = navController,
+        appSettingsDataStore = fakeDataStore,
+        backgroundMusicManager = fakeMusicManager
+    )
 
     @Test
     fun playerName_canBeUpdated() = runTest {
@@ -49,10 +64,8 @@ class PreferencesScreenTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val saveButtonText = context.getString(R.string.preferences_button_save_player_name)
 
-        // 1. Create the ViewModel for this specific test.
-        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        val viewModel = createViewModel()
 
-        // 2. Set content and wait for the UI to be idle.
         composeTestRule.setContent {
             PreferencesScreen(
                 preferencesViewModel = viewModel,
@@ -63,12 +76,10 @@ class PreferencesScreenTest {
 
         val initialName = viewModel.playerName.value
 
-        // 3. Interact with the UI.
         composeTestRule.onNodeWithText(initialName).performTextClearance()
         composeTestRule.onNodeWithText("").performTextInput(newName)
         composeTestRule.onNodeWithText(saveButtonText).performClick()
 
-        // 4. Assert.
         assertThat(fakeDataStore.playerName.value).isEqualTo(newName)
     }
 
@@ -77,13 +88,10 @@ class PreferencesScreenTest {
         val initialSelection = setOf("background_01", "background_03")
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
 
-        // 1. Set the desired state BEFORE creating the ViewModel.
         fakeDataStore.saveSelectedBackgrounds(initialSelection)
 
-        // 2. Create the ViewModel now, so its `init` block uses the correct state.
-        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        val viewModel = createViewModel()
 
-        // 3. Set content and wait for UI to stabilize.
         composeTestRule.setContent {
             PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
         }
@@ -93,18 +101,16 @@ class PreferencesScreenTest {
         val dialogTitle = context.getString(R.string.background_selection_dialog_title)
         val okButtonText = context.getString(R.string.button_ok)
 
-        // 4. Open and interact with the dialog.
-        composeTestRule.onNodeWithText(selectButtonText).performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasText(selectButtonText))
+        composeTestRule.onNodeWithText(selectButtonText).performClick()
         composeTestRule.onNodeWithText(dialogTitle).assertIsDisplayed()
         composeTestRule.onNodeWithText("Background 01").performClick() // Deselect
         composeTestRule.onNodeWithText("Background 02").performClick() // Select
         composeTestRule.onNodeWithText(okButtonText).performClick()
 
-        // 5. Confirm the selection to trigger the save operation and wait.
         viewModel.confirmBackgroundSelections()
         composeTestRule.waitForIdle()
 
-        // 6. Assert the final state in the DataStore.
         val expectedSelection = setOf("background_03", "background_02")
         assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(expectedSelection)
     }
@@ -113,26 +119,23 @@ class PreferencesScreenTest {
     fun boardDimensions_showsErrorWhenNotEnoughCards() = runTest {
         val initialWidth = 3
         val initialHeight = 4
-        val initialCards = (1..6).map { "img_c_%02d".format(it) }.toSet() // 6 cards
+        val initialCards = (1..6).map { "img_c_%02d".format(it) }.toSet()
 
-        // 1. Set up initial state with not enough cards for a larger board
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
         fakeDataStore.saveSelectedCards(initialCards)
 
-        // 2. Create the ViewModel and compose the UI
-        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        val viewModel = createViewModel()
         composeTestRule.setContent {
             PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
         }
         composeTestRule.waitForIdle()
 
-        // 3. Find the slider by its testTag, scroll to it, and swipe to increase the value
-        composeTestRule.onNodeWithTag("WidthSlider").performScrollTo().performGesture { swipeRight() }
-        composeTestRule.waitForIdle() // Wait for the ViewModel to process the change
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasTestTag("WidthSlider"))
+        composeTestRule.onNodeWithTag("WidthSlider").performGesture { swipeRight() }
+        composeTestRule.waitForIdle()
 
-        // 4. Assert that the error is shown and the dimensions were not saved
         assertThat(viewModel.boardDimensionError.value).isNotNull()
-        assertThat(fakeDataStore.selectedBoardWidth.value).isEqualTo(initialWidth) // Verify it did not change
+        assertThat(fakeDataStore.selectedBoardWidth.value).isEqualTo(initialWidth)
     }
 
     @Test
@@ -144,32 +147,25 @@ class PreferencesScreenTest {
         val initialCards = (1..minRequired).map { "img_c_%02d".format(it) }.toSet()
         val totalRefinedCards = 20
 
-        // 1. Set up initial state with a valid number of cards
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
         fakeDataStore.saveSelectedCards(initialCards)
 
-        // 2. Create ViewModel and compose UI
-        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        val viewModel = createViewModel()
         composeTestRule.setContent {
             PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
         }
         composeTestRule.waitForIdle()
 
-        // 3. Open the dialog
         val buttonText = context.getString(R.string.preferences_button_select_refined_cards, initialCards.size, totalRefinedCards)
-        composeTestRule.onNodeWithText(buttonText).performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasText(buttonText))
+        composeTestRule.onNodeWithText(buttonText).performClick()
 
-        // 4. Find the confirm button and verify it's initially enabled
         val okButtonNode = composeTestRule.onNodeWithText(context.getString(R.string.button_ok))
         okButtonNode.assertIsEnabled()
 
-        // 5. Interact to create an invalid state (less than 6 cards)
         composeTestRule.onNodeWithText("Refined 1").performClick() // Deselect, now has 5 cards
-
-        // 6. Wait for recomposition
         composeTestRule.waitForIdle()
 
-        // 7. Assert that the OK button is now disabled
         okButtonNode.assertIsNotEnabled()
     }
 
@@ -181,35 +177,29 @@ class PreferencesScreenTest {
         val initialCards = (1..6).map { "img_c_%02d".format(it) }.toSet()
         val totalRefinedCards = 20
 
-        // 1. Set up initial state
         fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
         fakeDataStore.saveSelectedCards(initialCards)
 
-        // 2. Create ViewModel and compose UI
-        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
+        val viewModel = createViewModel()
         composeTestRule.setContent {
             PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
         }
         composeTestRule.waitForIdle()
 
-        // 3. Open the dialog
         val buttonText = context.getString(R.string.preferences_button_select_refined_cards, initialCards.size, totalRefinedCards)
-        composeTestRule.onNodeWithText(buttonText).performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasText(buttonText))
+        composeTestRule.onNodeWithText(buttonText).performClick()
 
-        // 4. Interact and verify the dialog title changes, removing ambiguity
         composeTestRule.onNodeWithText("Refined 1").performClick() // Deselect
         val newDialogTitle = context.getString(R.string.preferences_button_select_refined_cards, 5, totalRefinedCards)
-        composeTestRule.onNodeWithText(newDialogTitle).assertIsDisplayed() // Assert the new, unique title
+        composeTestRule.onNodeWithText(newDialogTitle).assertIsDisplayed()
 
-        // 5. Continue interaction
         composeTestRule.onNodeWithText("Refined 7").performClick() // Select
         composeTestRule.onNodeWithText(context.getString(R.string.button_ok)).performClick()
 
-        // 6. CRUCIAL: Confirm selections to trigger the save action
         viewModel.confirmCardSelections()
         composeTestRule.waitForIdle()
 
-        // 7. Assert the final state was saved correctly
         val expectedCards = initialCards.toMutableSet().apply {
             remove("img_c_01")
             add("img_c_07")
@@ -218,11 +208,8 @@ class PreferencesScreenTest {
     }
 
     @Test
-    fun musicSelectionDialog_opensAndInteractsCorrectly() = runTest {
-        // 1. Create the ViewModel for this specific test.
-        val viewModel = PreferencesViewModel(navController = navController, appSettingsDataStore = fakeDataStore)
-
-        // 2. Set content and wait for UI to stabilize.
+    fun musicSelectionDialog_canSelectNone() = runTest {
+        val viewModel = createViewModel()
         composeTestRule.setContent {
             PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
         }
@@ -231,22 +218,60 @@ class PreferencesScreenTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val initialCount = viewModel.selectedMusicTrackNames.value.size
         val selectMusicTracksText = context.getString(R.string.preferences_button_select_music_tracks, initialCount)
-        val dialogTitle = context.getString(R.string.preferences_music_selection_dialog_title)
-        val toggleAllText = context.getString(R.string.dialog_select_deselect_all)
-        val okText = context.getString(R.string.button_ok)
+        val noneButtonText = context.getString(R.string.preferences_music_selection_none)
 
-        // 3. Interact with the UI.
-        composeTestRule.onNodeWithText(selectMusicTracksText).performScrollTo().performClick()
-        composeTestRule.onNodeWithText(dialogTitle).assertIsDisplayed()
-        composeTestRule.onNodeWithText(toggleAllText).performClick()
-        composeTestRule.onNodeWithText(toggleAllText).performClick()
-        val trackToSelect = "Classic Slow Guitar"
-        composeTestRule.onNodeWithText(trackToSelect).performScrollTo().performClick()
-        composeTestRule.onNodeWithText(okText).performClick()
+        // Open the dialog and click the "None" button
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasText(selectMusicTracksText))
+        composeTestRule.onNodeWithText(selectMusicTracksText).performClick()
+        composeTestRule.onNodeWithText(noneButtonText).performClick()
+        composeTestRule.waitForIdle()
 
-        // 4. Assert.
-        val expectedSelection = setOf("classic_slow_guitar")
-        assertThat(viewModel.selectedMusicTrackNames.value).isEqualTo(expectedSelection)
-        composeTestRule.onNodeWithText(dialogTitle).assertDoesNotExist()
+        // Assert that the selection is now empty and the dialog is gone
+        assertThat(fakeDataStore.selectedMusicTrackNames.value).isEmpty()
+        composeTestRule.onNodeWithText(context.getString(R.string.preferences_music_selection_dialog_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun soundEffects_canBeToggledAndVolumeChanged() = runTest {
+        val viewModel = createViewModel()
+        composeTestRule.setContent {
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
+        }
+        composeTestRule.waitForIdle()
+
+        val preferencesListTag = "PreferencesList"
+        val sfxSwitchTag = "SfxSwitch"
+        val sfxSliderTag = "SfxVolumeSlider"
+        val listNode = composeTestRule.onNodeWithTag(preferencesListTag)
+
+        // 1. Initially, SFX are enabled
+        val initialVolume = fakeDataStore.soundEffectsVolume.value
+        assertThat(fakeDataStore.areSoundEffectsEnabled.value).isTrue()
+
+        // 2. Disable sound effects
+        listNode.performScrollToNode(hasTestTag(sfxSwitchTag))
+        composeTestRule.onNodeWithTag(sfxSwitchTag).performClick()
+        composeTestRule.waitForIdle()
+        assertThat(fakeDataStore.areSoundEffectsEnabled.value).isFalse()
+        
+        // The slider should be disabled now
+        listNode.performScrollToNode(hasTestTag(sfxSliderTag))
+        composeTestRule.onNodeWithTag(sfxSliderTag).assertIsNotEnabled()
+
+        // 3. Re-enable sound effects
+        listNode.performScrollToNode(hasTestTag(sfxSwitchTag))
+        composeTestRule.onNodeWithTag(sfxSwitchTag).performClick()
+        composeTestRule.waitForIdle()
+        assertThat(fakeDataStore.areSoundEffectsEnabled.value).isTrue()
+        
+        // The slider should be enabled again
+        listNode.performScrollToNode(hasTestTag(sfxSliderTag))
+        composeTestRule.onNodeWithTag(sfxSliderTag).assertIsEnabled()
+
+        // 4. Change volume
+        listNode.performScrollToNode(hasTestTag(sfxSliderTag))
+        composeTestRule.onNodeWithTag(sfxSliderTag).performGesture { swipeRight() }
+        composeTestRule.waitForIdle()
+        assertThat(fakeDataStore.soundEffectsVolume.value).isGreaterThan(initialVolume)
     }
 }
