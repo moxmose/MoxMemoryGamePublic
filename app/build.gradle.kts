@@ -41,6 +41,10 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            // Add JVM arguments for Robolectric/Mockito to work with modern Java
+            all {
+                it.jvmArgs("-Xmx4g", "-noverify")
+            }
         }
     }
 }
@@ -79,7 +83,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material:material-icons-extended") // ADDED FOR ICONS
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.navigation.runtime.android)
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.datastore.preferences)
@@ -88,7 +92,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.truth)
-    testImplementation(libs.mockito.core)
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito:mockito-inline:5.11.0")
     testImplementation("androidx.test:core-ktx:1.5.0")
     testImplementation("androidx.test.ext:junit-ktx:1.1.5")
     testImplementation("org.robolectric:robolectric:4.16")

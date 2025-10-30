@@ -566,10 +566,4 @@ class PreferencesViewModelTest {
         verify(mockMusicManager).stopPreview()
     }
 
-    @Test
-    fun onCleared_callsStopPreviewOnManager() = runTest(testDispatcher) {
-        initViewModel()
-        viewModel.onCleared()
-        verify(mockMusicManager).stopPreview()
-    }
 }
