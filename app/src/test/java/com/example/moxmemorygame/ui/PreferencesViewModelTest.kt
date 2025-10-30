@@ -8,6 +8,7 @@ import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.data.local.IAppSettingsDataStore
+import com.example.moxmemorygame.model.BackgroundMusic
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -35,7 +38,7 @@ class PreferencesViewModelTest {
     private lateinit var viewModel: PreferencesViewModel
     private lateinit var fakeDataStore: FakeAppSettingsDataStore
     private lateinit var testNavController: TestNavHostController
-    private lateinit var fakeMusicManager: BackgroundMusicManager
+    private lateinit var mockMusicManager: BackgroundMusicManager
 
     @Before
     fun setUp() {
@@ -50,18 +53,15 @@ class PreferencesViewModelTest {
             composable(Screen.OpeningMenuScreen.route) { }
         }
 
-        fakeMusicManager = BackgroundMusicManager(
-            context = ApplicationProvider.getApplicationContext(),
-            appSettingsDataStore = fakeDataStore,
-            externalScope = CoroutineScope(testDispatcher)
-        )
+        // Use a mock for the music manager to verify interactions
+        mockMusicManager = mock(BackgroundMusicManager::class.java)
     }
 
     private fun initViewModel() {
         viewModel = PreferencesViewModel(
             navController = testNavController, 
             appSettingsDataStore = fakeDataStore,
-            backgroundMusicManager = fakeMusicManager
+            backgroundMusicManager = mockMusicManager // Use the mock
         )
     }
 
@@ -139,6 +139,21 @@ class PreferencesViewModelTest {
 
         // Assert
         assertThat(viewModel.cardSelectionError.value).isNull()
+    }
+
+    @Test
+    fun clearBoardDimensionError_clearsTheError() = runTest(testDispatcher) {
+        // Arrange: first, create an error state
+        initViewModel()
+        viewModel.updateBoardDimensions(PreferencesViewModel.MIN_BOARD_WIDTH - 1, 4) // Trigger error
+        advanceUntilIdle()
+        assertThat(viewModel.boardDimensionError.value).isNotNull() // Pre-condition check
+
+        // Act
+        viewModel.clearBoardDimensionError()
+
+        // Assert
+        assertThat(viewModel.boardDimensionError.value).isNull()
     }
 
     @Test
@@ -283,22 +298,6 @@ class PreferencesViewModelTest {
         // Assert
         assertThat(viewModel.boardDimensionError.value).isNotNull()
     }
-
-    @Test
-    fun clearBoardDimensionError_clearsTheError() = runTest(testDispatcher) {
-        // Arrange: first, create an error state
-        initViewModel()
-        viewModel.updateBoardDimensions(PreferencesViewModel.MIN_BOARD_WIDTH - 1, 4) // Trigger error
-        advanceUntilIdle()
-        assertThat(viewModel.boardDimensionError.value).isNotNull() // Pre-condition check
-
-        // Act
-        viewModel.clearBoardDimensionError()
-
-        // Assert
-        assertThat(viewModel.boardDimensionError.value).isNull()
-    }
-
 
     @Test
     fun toggleSelectAllBackgrounds_whenDeselectingAll_fallsBackToFirstSelected() = runTest(testDispatcher) {
@@ -548,5 +547,29 @@ class PreferencesViewModelTest {
         viewModel.updateBackgroundSelection("background_00", false)
 
         assertThat(viewModel.selectedBackgrounds.value).isEqualTo(newSelection)
+    }
+
+    // --- Interaction tests with mocked BackgroundMusicManager ---
+
+    @Test
+    fun playMusicPreview_callsManager() = runTest(testDispatcher) {
+        initViewModel()
+        val track = BackgroundMusic.ClassicSlowGuitar
+        viewModel.playMusicPreview(track)
+        verify(mockMusicManager).playPreview(track)
+    }
+
+    @Test
+    fun stopMusicPreview_callsManager() = runTest(testDispatcher) {
+        initViewModel()
+        viewModel.stopMusicPreview()
+        verify(mockMusicManager).stopPreview()
+    }
+
+    @Test
+    fun onCleared_callsStopPreviewOnManager() = runTest(testDispatcher) {
+        initViewModel()
+        viewModel.onCleared()
+        verify(mockMusicManager).stopPreview()
     }
 }
