@@ -126,18 +126,6 @@ fun PreferencesScreen(
         }
     }
 
-    LaunchedEffect(boardDimensionError) {
-        boardDimensionError?.let {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = it,
-                    duration = androidx.compose.material3.SnackbarDuration.Long
-                )
-                preferencesViewModel.clearBoardDimensionError()
-            }
-        }
-    }
-
     val refinedCardResourceNames = remember(availableCardResourceNames) {
         availableCardResourceNames.filter { it.startsWith("img_c_") }
     }
@@ -390,7 +378,11 @@ fun MusicPreferencesSection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(stringResource(R.string.preferences_music_enable_label), style = MaterialTheme.typography.bodyLarge)
-            Switch(checked = isMusicEnabled, onCheckedChange = onMusicEnabledChange)
+            Switch(
+                checked = isMusicEnabled, 
+                onCheckedChange = onMusicEnabledChange,
+                modifier = Modifier.testTag("MusicSwitch")
+            )
         }
 
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -399,7 +391,8 @@ fun MusicPreferencesSection(
                 value = musicVolume,
                 onValueChange = onMusicVolumeChange,
                 valueRange = 0f..1f,
-                enabled = isMusicEnabled
+                enabled = isMusicEnabled,
+                modifier = Modifier.testTag("MusicVolumeSlider")
             )
         }
 

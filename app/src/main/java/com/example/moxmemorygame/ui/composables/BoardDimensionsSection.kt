@@ -62,7 +62,9 @@ fun BoardDimensionsSection(
                 valueRange = PreferencesViewModel.MIN_BOARD_HEIGHT.toFloat()..PreferencesViewModel.MAX_BOARD_HEIGHT.toFloat(),
                 steps = (PreferencesViewModel.MAX_BOARD_HEIGHT - PreferencesViewModel.MIN_BOARD_HEIGHT - 1),
                 onValueChangeFinished = onHeightChangeFinished,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("HeightSlider")
             )
         }
         Text(

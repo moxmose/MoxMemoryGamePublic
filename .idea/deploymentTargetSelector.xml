@@ -13,10 +13,19 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
+      <SelectionState runConfigName="backButton_navigatesToOpeningMenu()">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
+      <SelectionState runConfigName="simpleCardSelection_canBeUpdatedCorrectly()">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
+      <SelectionState runConfigName="boardDimensions_showsErrorWhenNotEnoughCards_height()">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
       <SelectionState runConfigName="PreferencesScreenTest">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="soundEffects_canBeToggledAndVolumeChanged()">
+      <SelectionState runConfigName="music_canBeToggledAndVolumeChanged()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
