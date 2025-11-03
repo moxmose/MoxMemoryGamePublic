@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,15 +73,24 @@ fun OpeningMenuScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween // Changed to push content apart
         ) {
-            Text(
-                text = stringResource(id = R.string.opening_menu_title),
-                style = MaterialTheme.typography.displaySmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.clickable { showAboutDialog = true }
-            )
+            Card(
+                modifier = Modifier.clickable { showAboutDialog = true },
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 0.dp, bottomEnd = 16.dp, bottomStart = 0.dp),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                )
+            ) {
+                Text(
+                    text = stringResource(id = R.string.opening_menu_title),
+                    style = MaterialTheme.typography.displaySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp)
+                )
+            }
 
             LastGameAndRanking(topRanking = topRanking, lastPlayed = lastPlayed)
-            
+
             // Buttons at the bottom
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

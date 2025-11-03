@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.moxmemorygame.BuildConfig
 import com.example.moxmemorygame.R
 
 @Composable
@@ -38,6 +39,11 @@ fun AboutDialog(
                 Text(
                     text = stringResource(id = R.string.about_dialog_content),
                     modifier = Modifier.padding(vertical = 16.dp)
+                )
+                Text(
+                    text = stringResource(id = R.string.version_format, BuildConfig.VERSION_NAME),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
                 TextButton(
                     onClick = onDismissRequest,

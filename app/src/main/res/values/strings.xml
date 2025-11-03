@@ -11,6 +11,7 @@
     <!-- Common Formats -->
     <string name="score_points_format">%1$d pts</string> <!-- Example: "123 pts" -->
     <string name="rank_number_format">%1$d.</string> <!-- Example: "1." -->
+    <string name="version_format">Version %1$s</string>
 
     <!-- PreferencesScreen -->
     <string name="preferences_screen_title">PREFERENCES</string>
@@ -53,9 +54,9 @@
     <string name="image_preview_dialog_content_description">Preview %1$s</string>
     <string name="about_dialog_title">About Mox Memory Game</string>
     <string name="about_dialog_content">This is a classic memory game where you have to find all the pairs of cards.\n
-Developed with and for Jetpack Compose, with my abilities for the skeleton and the game\'s working code, using the help of AI for free contents (Copilot for graphics, MusicGPT for music) and massively for refactoring and testing (Gemini who provided constant help and worked a lot), plus free sounds found on the web.\n
-The code is freely available on GitHub under a standard GPL license.\n
-Mox 2025 - v1.0</string>
+\nDeveloped with and for Jetpack Compose, with my abilities for the skeleton and the game\'s working code, using the help of AI for free contents (Copilot for graphics, MusicGPT for music) and massively for refactoring and testing (Gemini who provided constant help and worked a lot), plus free sounds found on the web.\n
+\nThe code is freely available on GitHub under a standard GPL license.\n
+\nMox 2025</string>
 
     <!-- Common Dialog/Button Strings -->
     <string name="dialog_click_image_to_preview">(Click image to preview)</string>
