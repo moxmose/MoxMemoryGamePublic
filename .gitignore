@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# User-specific files to ignore
+androidTestResultsUserPreferences.xml
+deploymentTargetSelector.xml
