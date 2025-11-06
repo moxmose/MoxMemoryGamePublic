@@ -2,6 +2,10 @@ package com.example.moxmemorygame
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Text
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDescendantOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -17,6 +21,7 @@ import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.ui.OpeningMenuViewModel
 import com.example.moxmemorygame.ui.Screen
 import com.example.moxmemorygame.ui.screens.OpeningMenuScreen
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -100,5 +105,39 @@ class OpeningMenuScreenTest {
         composeTestRule.onNodeWithText(context.getString(R.string.opening_menu_button_settings)).performClick()
 
         assertEquals(Screen.PreferencesScreen.route, navController.currentDestination?.route)
+    }
+
+    @Test
+    fun whenRankingExists_itIsDisplayed() {
+        val fakeDataStore = FakeAppSettingsDataStore()
+        runBlocking {
+            fakeDataStore.saveScore("Player1", 100)
+            fakeDataStore.saveScore("Player2", 200)
+        }
+
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+        val viewModel = OpeningMenuViewModel(navController, fakeDataStore)
+
+        composeTestRule.setContent {
+            OpeningMenuScreen(
+                innerPadding = PaddingValues(0.dp),
+                openingMenuViewModel = viewModel
+            )
+        }
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        // Verify the "TOP RANKING" title is shown
+        composeTestRule.onNodeWithText(context.getString(R.string.opening_menu_top_ranking)).assertIsDisplayed()
+
+        // Verify the RankingList itself is displayed
+        composeTestRule.onNodeWithTag("RankingList").assertIsDisplayed()
+
+        // Verify that the Text with "Player2" exists and is a descendant of the list
+        composeTestRule.onNode(isDescendantOf(hasTestTag("RankingList")).and(hasText("Player2"))).assertIsDisplayed()
+
+        // Verify that the Text with the score exists and is a descendant of the list
+        val scoreText = context.getString(R.string.score_points_format, 200)
+        composeTestRule.onNode(isDescendantOf(hasTestTag("RankingList")).and(hasText(scoreText))).assertIsDisplayed()
     }
 }
