@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,7 +72,6 @@ fun OpeningMenuScreen(
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween // Changed to push content apart
         ) {
             Card(
                 modifier = Modifier.clickable { showAboutDialog = true },
@@ -89,7 +89,15 @@ fun OpeningMenuScreen(
                 )
             }
 
-            LastGameAndRanking(topRanking = topRanking, lastPlayed = lastPlayed)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LastGameAndRanking(
+                topRanking = topRanking,
+                lastPlayed = lastPlayed,
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Buttons at the bottom
             Column(
@@ -131,7 +139,9 @@ fun LastGameAndRanking(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp), // Added vertical padding
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (topRanking.isNotEmpty()) {
@@ -141,22 +151,29 @@ fun LastGameAndRanking(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             LazyColumn(
-                modifier = Modifier.height(150.dp) // Fixed height for the ranking list
+                modifier = Modifier
+                    .weight(1f) // Expands to fill available space
+                    .testTag("RankingList"),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 itemsIndexed(topRanking) { index, score ->
-                    ScoreCard(entry = score, rank = index + 1)
+                    ScoreCard(
+                        entry = score,
+                        rank = index + 1,
+                        isLastPlayed = score == lastPlayed
+                    )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp)) // Spacer between list and last game
         }
 
         if (lastPlayed != null) {
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(id = R.string.opening_menu_last_game_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            ScoreCard(entry = lastPlayed, isLastPlayed = true)
+            ScoreCard(entry = lastPlayed, isLastPlayed = true, modifier = Modifier.testTag("LastPlayedCard"))
         }
     }
 }
@@ -176,8 +193,7 @@ fun ScoreCard(
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (rank != null) {
@@ -194,6 +210,7 @@ fun ScoreCard(
                     color = Color.White
                 )
             }
+            Spacer(Modifier.weight(1f)) // This is the fix
             Text(
                 text = stringResource(id = R.string.score_points_format, entry.score),
                 style = MaterialTheme.typography.bodyLarge,

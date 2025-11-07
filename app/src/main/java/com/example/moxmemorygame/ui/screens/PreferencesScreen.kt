@@ -256,7 +256,7 @@ fun PreferencesScreen(
                                 preferencesViewModel.prepareForBackgroundSelection()
                                 showBackgroundDialog = true
                             },
-                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 1.dp, bottomStart = 1.dp, bottomEnd = 16.dp),
+                            shape = RoundedCornerShape(topStart = 1.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 1.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(stringResource(R.string.preferences_button_select_backgrounds, selectedBackgroundsFromVM.size), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
