@@ -33,39 +33,39 @@ class GameViewModel(
     private val resourceNameToId: (String) -> Int,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val delayProvider: suspend (Long) -> Unit = { delay(it) }
-): ViewModel() {
-    val playerName: StateFlow<String> = appSettingsDataStore.playerName
-    val selectedBackgrounds: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
+): ViewModel(), IGameViewModel {
+    override val playerName: StateFlow<String> = appSettingsDataStore.playerName
+    override val selectedBackgrounds: StateFlow<Set<String>> = appSettingsDataStore.selectedBackgrounds
 
     private val _score = mutableIntStateOf(0)
-    val score get() = _score
+    override val score get() = _score
 
     private val _moves = mutableIntStateOf(0)
-    val moves get() = _moves
+    override val moves get() = _moves
 
     private var lastMove: Pair<Int, Int> = Pair(0,0)
     private val noLastMove = Pair(-1, -1)
     private var cardInPlay: Boolean = false
 
     private var _tablePlay: GameBoard? = null
-    val tablePlay: GameBoard? get() = _tablePlay
+    override val tablePlay: GameBoard? get() = _tablePlay
 
     @DrawableRes
     private lateinit var _gameCardImages: List<Int>
-    val gameCardImages get() = _gameCardImages
+    override val gameCardImages get() = _gameCardImages
 
-    val currentTime = timerViewModel.elapsedSeconds
+    override val currentTime = timerViewModel.elapsedSeconds
     private var timeOfLastMove = 0L
 
-    var gamePaused: MutableState<Boolean> = mutableStateOf(false)
-    var gameResetRequest: MutableState<Boolean> = mutableStateOf(false)
-    var gameWon: MutableState<Boolean> = mutableStateOf(false)
+    override var gamePaused: MutableState<Boolean> = mutableStateOf(false)
+    override var gameResetRequest: MutableState<Boolean> = mutableStateOf(false)
+    override var gameWon: MutableState<Boolean> = mutableStateOf(false)
 
     private val _isBoardInitialized = mutableStateOf(false)
-    val isBoardInitialized: State<Boolean> = _isBoardInitialized
+    override val isBoardInitialized: State<Boolean> = _isBoardInitialized
 
     private val _playResetSound = MutableStateFlow(false)
-    val playResetSound: StateFlow<Boolean> = _playResetSound.asStateFlow()
+    override val playResetSound: StateFlow<Boolean> = _playResetSound.asStateFlow()
 
     init {
         Log.d("GameVM", "init - Calling resetGame()")
@@ -99,7 +99,7 @@ class GameViewModel(
         }
     }
 
-    fun onResetSoundPlayed() {
+    override fun onResetSoundPlayed() {
         _playResetSound.value = false
     }
 
@@ -159,7 +159,7 @@ class GameViewModel(
     }
 
     // Called from GameWonDialog and ResetDialog confirmation to go back to the menu
-    fun navigateToOpeningMenuAndCleanupDialogStates() {
+    override fun navigateToOpeningMenuAndCleanupDialogStates() {
         Log.d("GameVM", "navigateToOpeningMenuAndCleanupDialogStates - Cleaning dialog states and navigating.")
         gamePaused.value = false
         gameResetRequest.value = false
@@ -170,7 +170,7 @@ class GameViewModel(
         }
     }
 
-    fun checkGamePlayCardTurned(x: Int, y: Int, onSoundEvent: (SoundEvent) -> Unit) {
+    override fun checkGamePlayCardTurned(x: Int, y: Int, onSoundEvent: (SoundEvent) -> Unit) {
         if (!isBoardInitialized.value) { 
             Log.w("GameVM_Check", "Board not initialized. Ignoring.")
             return
@@ -318,20 +318,20 @@ class GameViewModel(
     }
 
     // Called by the Pause button or when the game is won
-    fun requestPauseDialog() { 
+    override fun requestPauseDialog() { 
         Log.d("GameVM", "requestPauseDialog - Setting gamePaused = true")
         gamePaused.value = true 
     }
 
     // Called by the Reset button
-    fun requestResetDialog() { 
+    override fun requestResetDialog() { 
         Log.d("GameVM", "requestResetDialog - Setting gamePaused = true, gameResetRequest = true")
         gamePaused.value = true
         gameResetRequest.value = true 
     }
 
     // Called to close the PauseDialog
-    fun dismissPauseDialog() {
+    override fun dismissPauseDialog() {
         Log.d("GameVM", "dismissPauseDialog - Setting gamePaused = false")
         gamePaused.value = false
         // gameResetRequest should already be false, but just in case:
@@ -342,7 +342,7 @@ class GameViewModel(
     }
 
     // Called to cancel the ResetDialog
-    fun cancelResetDialog() {
+    override fun cancelResetDialog() {
         Log.d("GameVM", "cancelResetDialog - Setting gamePaused = false, gameResetRequest = false")
         gamePaused.value = false
         gameResetRequest.value = false

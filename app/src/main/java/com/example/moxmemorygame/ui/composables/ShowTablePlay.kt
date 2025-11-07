@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.example.moxmemorygame.R
@@ -41,6 +42,7 @@ fun ShowTablePlay(
     Column(
         modifier = modifier
             .fillMaxHeight()
+            .testTag("GameBoard") // <-- This is the fix
     ) {
         for (y in 0 until yDim) {
             Spacer(Modifier.weight(1f))

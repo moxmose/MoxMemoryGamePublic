@@ -24,6 +24,7 @@ import com.example.moxmemorygame.R
 import com.example.moxmemorygame.model.GameFooterAction
 import com.example.moxmemorygame.model.SoundEvent
 import com.example.moxmemorygame.ui.GameViewModel
+import com.example.moxmemorygame.ui.IGameViewModel
 import com.example.moxmemorygame.ui.SoundUtils
 import com.example.moxmemorygame.ui.composables.BackgroundImg
 import com.example.moxmemorygame.ui.composables.GameWonDialog
@@ -40,7 +41,7 @@ import org.koin.compose.koinInject
 fun GameScreen(
     innerPadding: PaddingValues, 
     modifier: Modifier = Modifier, 
-    gameViewModel: GameViewModel = koinViewModel(),
+    gameViewModel: IGameViewModel = koinViewModel<GameViewModel>(),
     soundUtils: SoundUtils = koinInject()
 ) {
     val onSoundEvent: (SoundEvent) -> Unit = { event ->
@@ -86,8 +87,8 @@ fun GameScreen(
     val gameResetRequest by gameViewModel.gameResetRequest 
     val gameWon by gameViewModel.gameWon 
 
-    val score = gameViewModel.score.intValue
-    val moves = gameViewModel.moves.intValue
+    val score = gameViewModel.score.value
+    val moves = gameViewModel.moves.value
     val timeGame by gameViewModel.currentTime.collectAsState()
     val timeGameString = timeGame.formatDuration()
 

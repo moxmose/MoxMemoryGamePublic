@@ -1,5 +1,6 @@
 package com.example.moxmemorygame.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -23,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso
 import com.example.moxmemorygame.R
 import com.example.moxmemorygame.data.local.FakeAppSettingsDataStore
 import com.example.moxmemorygame.ui.BackgroundMusicManager
@@ -211,6 +213,35 @@ class PreferencesScreenTest {
 
         composeTestRule.onNodeWithText(errorText).assertIsDisplayed()
         assertThat(fakeDataStore.selectedBoardHeight.value).isEqualTo(initialHeight)
+    }
+    
+    @Test
+    fun boardDimensions_canBeUpdatedWhenEnoughCards() = runTest {
+        val initialWidth = 3
+        val initialHeight = 4
+        val newWidth = 4
+        val requiredPairs = (newWidth * initialHeight) / 2 // 8
+        // Ensure we have more than enough cards
+        val initialCards = (1..(requiredPairs + 5)).map { "img_c_%02d".format(it) }.toSet()
+
+        fakeDataStore.saveBoardDimensions(initialWidth, initialHeight)
+        fakeDataStore.saveSelectedCards(initialCards)
+
+        val viewModel = createViewModel()
+        composeTestRule.setContent {
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
+        }
+        composeTestRule.waitForIdle()
+
+        // Change width
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasTestTag("WidthSlider"))
+        composeTestRule.onNodeWithTag("WidthSlider").performTouchInput { swipeRight() }
+        composeTestRule.waitForIdle()
+
+        // Assert that the new width is saved and no error is shown
+        assertThat(fakeDataStore.selectedBoardWidth.value).isGreaterThan(initialWidth)
+        // We can't easily get the error text if it doesn't exist, so we check the ViewModel state
+        assertThat(viewModel.boardDimensionError.value).isNull()
     }
 
     @Test
@@ -427,5 +458,74 @@ class PreferencesScreenTest {
         composeTestRule.onNodeWithTag(sfxSliderTag).performTouchInput { swipeRight() }
         composeTestRule.waitForIdle()
         assertThat(fakeDataStore.soundEffectsVolume.value).isGreaterThan(initialVolume)
+    }
+
+    @Test
+    fun backgroundSelection_selectAll_worksAsExpected() = runTest {
+        val initialSelection = setOf("background_00") // Start with one
+        fakeDataStore.saveSelectedBackgrounds(initialSelection)
+
+        val viewModel = createViewModel()
+        val allBackgrounds = viewModel.availableBackgrounds.toSet()
+
+        composeTestRule.setContent {
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
+        }
+        composeTestRule.waitForIdle()
+
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val selectButtonText = context.getString(R.string.preferences_button_select_backgrounds, initialSelection.size)
+        val selectAllButtonText = context.getString(R.string.dialog_select_deselect_all)
+        val okButtonText = context.getString(R.string.button_ok)
+
+        // Open the dialog
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasText(selectButtonText, ignoreCase = true))
+        composeTestRule.onNodeWithText(selectButtonText, ignoreCase = true).performClick()
+
+        // Click "Select All"
+        composeTestRule.onNodeWithText(selectAllButtonText).performClick()
+        composeTestRule.waitForIdle()
+
+        // Confirm and close dialog
+        composeTestRule.onNodeWithText(okButtonText).performClick()
+        viewModel.confirmBackgroundSelections() // Manually trigger confirmation
+        composeTestRule.waitForIdle()
+
+        // Assert that all backgrounds are now saved in the data store
+        assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(allBackgrounds)
+    }
+    @Test
+    fun backgroundSelection_isNotSavedOnBackPress() = runTest {
+        val initialSelection = setOf("background_01")
+        fakeDataStore.saveSelectedBackgrounds(initialSelection)
+
+        val viewModel = createViewModel()
+
+        composeTestRule.setContent {
+            PreferencesScreen(preferencesViewModel = viewModel, innerPadding = PaddingValues(0.dp))
+        }
+        composeTestRule.waitForIdle()
+
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val selectButtonText = context.getString(R.string.preferences_button_select_backgrounds, initialSelection.size)
+        val dialogTitle = context.getString(R.string.background_selection_dialog_title)
+
+        // Open the dialog
+        composeTestRule.onNodeWithTag("PreferencesList").performScrollToNode(hasText(selectButtonText, ignoreCase = true))
+        composeTestRule.onNodeWithText(selectButtonText, ignoreCase = true).performClick()
+        composeTestRule.onNodeWithText(dialogTitle).assertIsDisplayed()
+
+        // Make a change
+        composeTestRule.onNodeWithText("Background 02").performClick()
+
+        // Simulate a back press
+        Espresso.pressBack()
+        composeTestRule.waitForIdle()
+
+        // Assert the dialog is gone
+        composeTestRule.onNodeWithText(dialogTitle).assertDoesNotExist()
+
+        // Assert that the data store still holds the initial selection
+        assertThat(fakeDataStore.selectedBackgrounds.value).isEqualTo(initialSelection)
     }
 }
