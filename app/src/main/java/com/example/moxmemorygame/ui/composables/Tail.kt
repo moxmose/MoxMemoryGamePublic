@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,7 @@ fun Tail(
                 bottomStart = 16.dp,
                 bottomEnd = 1.dp
             ),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag("ResetButton")
         ) {
             Text(stringResource(R.string.game_tail_button_reset), style = MaterialTheme.typography.bodyLarge)
         }
@@ -48,7 +49,7 @@ fun Tail(
                 bottomStart = 1.dp,
                 bottomEnd = 16.dp
             ),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag("PauseButton")
         ) {
             Text(stringResource(R.string.game_tail_button_pause), style = MaterialTheme.typography.bodyLarge)
         }

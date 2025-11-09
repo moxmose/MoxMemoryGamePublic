@@ -68,6 +68,7 @@ fun ShowTablePlay(
                                 else painterResource(id = cardImageId),
                                 modifier = Modifier
                                     .weight(5f)
+                                    .testTag("Card_${x}_${y}")
                                     .clickable { checkPlayCardTurned(x, y) },
                                 contentScale = if (!turned) ContentScale.FillBounds
                                 else ContentScale.Crop,
