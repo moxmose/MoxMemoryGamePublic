@@ -1,7 +1,6 @@
 package com.example.moxmemorygame
 
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -12,8 +11,11 @@ import org.koin.test.KoinTest
 import org.koin.test.check.checkModules
 import org.koin.test.mock.MockProvider
 import org.mockito.Mockito
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class DependencyInjectionTest : KoinTest {
 
     @Before
