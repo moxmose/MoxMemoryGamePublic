@@ -1,7 +1,9 @@
 package com.example.moxmemorygame.ui.composables
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -17,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.moxmemorygame.BuildConfig
 import com.example.moxmemorygame.R
+import java.util.Calendar
 
 @Composable
 fun AboutDialog(
@@ -43,8 +46,24 @@ fun AboutDialog(
                 Text(
                     text = stringResource(id = R.string.version_format, BuildConfig.VERSION_NAME),
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(bottom = 16.dp)
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                Text(
+                    text = stringResource(id = R.string.copyright_notice, currentYear, "Pittau Mosè (Mox)"),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = stringResource(id = R.string.license_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 TextButton(
                     onClick = onDismissRequest,
                     modifier = Modifier.align(Alignment.End)
