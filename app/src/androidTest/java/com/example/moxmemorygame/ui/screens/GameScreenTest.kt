@@ -2,6 +2,7 @@ package com.example.moxmemorygame.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.moxmemorygame.R
+import com.example.moxmemorygame.model.GameCard
 import com.example.moxmemorygame.model.GameBoard
 import com.example.moxmemorygame.model.SoundEvent
 import com.example.moxmemorygame.ui.IGameViewModel
@@ -34,42 +36,75 @@ class GameScreenTest {
 
     // A fake ViewModel implementing the interface to control the state for tests
     class FakeGameViewModel(
-        // We can now define the properties as we need them for the test
         override val playerName: StateFlow<String> = MutableStateFlow("Test Player"),
-        override val tablePlay: GameBoard? = null,
-        override val isBoardInitialized: State<Boolean> = mutableStateOf(false),
-        override val score: State<Int> = mutableIntStateOf(0),
-        override val moves: State<Int> = mutableIntStateOf(0),
+        initialBoard: GameBoard? = null,
+        initialIsBoardInitialized: State<Boolean> = mutableStateOf(false),
+        initialScore: State<Int> = mutableIntStateOf(0),
+        initialMoves: State<Int> = mutableIntStateOf(0),
         override val currentTime: MutableStateFlow<Long> = MutableStateFlow(0L),
-        override val gamePaused: State<Boolean> = mutableStateOf(false),
-        override val gameResetRequest: State<Boolean> = mutableStateOf(false),
-        override val gameWon: State<Boolean> = mutableStateOf(false),
+        initialGamePaused: MutableState<Boolean> = mutableStateOf(false),
+        initialGameResetRequest: MutableState<Boolean> = mutableStateOf(false),
+        initialGameWon: MutableState<Boolean> = mutableStateOf(false),
         override val selectedBackgrounds: MutableStateFlow<Set<String>> = MutableStateFlow(emptySet()),
         override val gameCardImages: List<Int> = emptyList(),
         override val playResetSound: MutableStateFlow<Boolean> = MutableStateFlow(false)
     ) : IGameViewModel {
 
+        override val tablePlay: GameBoard? = initialBoard
+        override val isBoardInitialized: State<Boolean> = initialIsBoardInitialized
+        override val score: State<Int> = initialScore
+        override val moves: State<Int> = initialMoves
+        override val gamePaused: MutableState<Boolean> = initialGamePaused
+        override val gameResetRequest: MutableState<Boolean> = initialGameResetRequest
+        override val gameWon: MutableState<Boolean> = initialGameWon
+
         var requestPauseDialogCalled by mutableStateOf(false)
             private set
         var requestResetDialogCalled by mutableStateOf(false)
             private set
-        var lastClickedX by mutableIntStateOf(-1)
-            private set
-        var lastClickedY by mutableIntStateOf(-1)
-            private set
 
-        // Implement methods with dummy logic, we only care about state for this UI test
+        private var lastMove: Pair<Int, Int>? = null
+
+        private fun checkWinCondition() {
+            val board = tablePlay ?: return
+            val allCoupled = board.cardsArray.all { row ->
+                row.all { cardState -> cardState.value?.coupled == true }
+            }
+            if (allCoupled) {
+                (gameWon as MutableState<Boolean>).value = true
+                (gamePaused as MutableState<Boolean>).value = true // To show the dialog
+            }
+        }
+
         override fun checkGamePlayCardTurned(x: Int, y: Int, onSoundEvent: (SoundEvent) -> Unit) {
-            lastClickedX = x
-            lastClickedY = y
+            val board = tablePlay ?: return
+            val card = board.cardsArray[x][y].value ?: return
+            if (card.turned || card.coupled) return
+
+            board.cardsArray[x][y].value = card.copy(turned = true)
+            (moves as MutableState<Int>).value++
+
+            val lastClicked = lastMove
+            if (lastClicked == null) {
+                lastMove = x to y
+            } else {
+                val lastCard = board.cardsArray[lastClicked.first][lastClicked.second].value!!
+                if (lastCard.id == card.id) {
+                    (score as MutableState<Int>).value += 100
+                    board.cardsArray[x][y].value = card.copy(turned = true, coupled = true)
+                    board.cardsArray[lastClicked.first][lastClicked.second].value = lastCard.copy(turned = true, coupled = true)
+                    checkWinCondition()
+                } else {
+                    board.cardsArray[x][y].value = card.copy(turned = false)
+                    board.cardsArray[lastClicked.first][lastClicked.second].value = lastCard.copy(turned = false)
+                }
+                lastMove = null
+            }
         }
+
         override fun navigateToOpeningMenuAndCleanupDialogStates() {}
-        override fun requestPauseDialog() {
-            requestPauseDialogCalled = true
-        }
-        override fun requestResetDialog() {
-            requestResetDialogCalled = true
-        }
+        override fun requestPauseDialog() { requestPauseDialogCalled = true }
+        override fun requestResetDialog() { requestResetDialogCalled = true }
         override fun dismissPauseDialog() {}
         override fun cancelResetDialog() {}
         override fun onResetSoundPlayed() {}
@@ -77,205 +112,185 @@ class GameScreenTest {
 
     @Test
     fun loadingIndicator_isDisplayed_beforeInitialization() = runTest {
-        // 1. Prepare the fake state
-        val fakeViewModel = FakeGameViewModel(
-            isBoardInitialized = mutableStateOf(false)
-        )
-
-        // 2. Set the content
+        val fakeViewModel = FakeGameViewModel(initialIsBoardInitialized = mutableStateOf(false))
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Assert that the loading text is displayed
         val context = ApplicationProvider.getApplicationContext<Context>()
         composeTestRule.onNodeWithText(context.getString(R.string.game_loading_board)).assertIsDisplayed()
-
-        // 4. Assert that the board is NOT displayed
         composeTestRule.onNodeWithTag("GameBoard").assertDoesNotExist()
     }
 
     @Test
     fun gameBoard_isDisplayed_whenInitialized() = runTest {
-        // 1. Prepare the fake state
         val fakeBoard = GameBoard(boardWidth = 2, boardHeight = 2)
         val fakeViewModel = FakeGameViewModel(
-            tablePlay = fakeBoard,
-            isBoardInitialized = mutableStateOf(true),
-            gameCardImages = listOf(1, 2) // Provide a non-empty list of card images
+            initialBoard = fakeBoard,
+            initialIsBoardInitialized = mutableStateOf(true),
+            gameCardImages = listOf(1, 2)
         )
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Assert that the board is displayed
         composeTestRule.onNodeWithTag("GameBoard").assertIsDisplayed()
     }
 
     @Test
     fun pauseDialog_isDisplayed_whenGameIsPaused() = runTest {
-        // 1. Prepare the fake state
-        val fakeViewModel = FakeGameViewModel(
-            gamePaused = mutableStateOf(true)
-        )
-
-        // 2. Set the content
+        val fakeViewModel = FakeGameViewModel(initialGamePaused = mutableStateOf(true))
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Assert that the pause dialog is displayed
         val context = ApplicationProvider.getApplicationContext<Context>()
         composeTestRule.onNodeWithText(context.getString(R.string.game_dialog_pause_exit_prompt)).assertIsDisplayed()
     }
 
     @Test
     fun gameWonDialog_isDisplayed_whenGameIsWon() = runTest {
-        // 1. Prepare the fake state
         val fakeViewModel = FakeGameViewModel(
-            gamePaused = mutableStateOf(true),
-            gameWon = mutableStateOf(true)
+            initialGamePaused = mutableStateOf(true),
+            initialGameWon = mutableStateOf(true)
         )
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Assert that the game won dialog is displayed
         val context = ApplicationProvider.getApplicationContext<Context>()
         composeTestRule.onNodeWithText(context.getString(R.string.game_dialog_won_title)).assertIsDisplayed()
     }
 
     @Test
     fun resetDialog_isDisplayed_whenResetIsRequested() = runTest {
-        // 1. Prepare the fake state
         val fakeViewModel = FakeGameViewModel(
-            gamePaused = mutableStateOf(true),
-            gameResetRequest = mutableStateOf(true)
+            initialGamePaused = mutableStateOf(true),
+            initialGameResetRequest = mutableStateOf(true)
         )
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Assert that the reset dialog is displayed
         val context = ApplicationProvider.getApplicationContext<Context>()
         composeTestRule.onNodeWithText(context.getString(R.string.game_dialog_reset_title)).assertIsDisplayed()
     }
 
     @Test
     fun header_displaysCorrectInformation() = runTest {
-        // 1. Prepare the fake state
         val testScore = 123
         val testMoves = 45
         val fakeViewModel = FakeGameViewModel(
-            score = mutableIntStateOf(testScore),
-            moves = mutableIntStateOf(testMoves)
+            initialScore = mutableIntStateOf(testScore),
+            initialMoves = mutableIntStateOf(testMoves)
         )
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Assert that the header information is displayed correctly
         val context = ApplicationProvider.getApplicationContext<Context>()
         val scoreText = context.getString(R.string.game_head_score, testScore)
         val movesText = context.getString(R.string.game_head_moves, testMoves)
-
         composeTestRule.onNodeWithText(scoreText).assertIsDisplayed()
         composeTestRule.onNodeWithText(movesText).assertIsDisplayed()
     }
 
     @Test
     fun clickingPauseButton_requestsPauseDialog() = runTest {
-        // 1. Prepare the fake state
         val fakeViewModel = FakeGameViewModel()
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Click the pause button
         composeTestRule.onNodeWithTag("PauseButton").performClick()
-
-        // 4. Assert that the view model's method was called
         assertThat(fakeViewModel.requestPauseDialogCalled).isTrue()
     }
 
     @Test
     fun clickingResetButton_requestsResetDialog() = runTest {
-        // 1. Prepare the fake state
         val fakeViewModel = FakeGameViewModel()
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
-
-        // 3. Click the reset button
         composeTestRule.onNodeWithTag("ResetButton").performClick()
-
-        // 4. Assert that the view model's method was called
         assertThat(fakeViewModel.requestResetDialogCalled).isTrue()
     }
 
     @Test
-    fun clickingCard_callsViewModel() = runTest {
-        // 1. Prepare the fake state
-        val boardWidth = 2
-        val boardHeight = 2
-        val fakeBoard = GameBoard(boardWidth = boardWidth, boardHeight = boardHeight)
+    fun whenCorrectPairIsClicked_scoreIncreasesAndCardsStayUp() = runTest {
+        val board = GameBoard(2, 2).apply {
+            cardsArray[0][0].value = GameCard(id = 0, turned = false, coupled = false)
+            cardsArray[0][1].value = GameCard(id = 1, turned = false, coupled = false)
+            cardsArray[1][0].value = GameCard(id = 1, turned = false, coupled = false)
+            cardsArray[1][1].value = GameCard(id = 0, turned = false, coupled = false)
+        }
         val fakeViewModel = FakeGameViewModel(
-            tablePlay = fakeBoard,
-            isBoardInitialized = mutableStateOf(true),
-            gameCardImages = listOf(1, 2, 3, 4) 
+            initialBoard = board,
+            initialIsBoardInitialized = mutableStateOf(true),
+            gameCardImages = listOf(R.drawable.img_c_01, R.drawable.img_c_02)
         )
-
-        // 2. Set the content
         composeTestRule.setContent {
-            GameScreen(
-                innerPadding = PaddingValues(0.dp),
-                gameViewModel = fakeViewModel
-            )
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
+        }
+        composeTestRule.onNodeWithTag("Card_0_0").performClick()
+        composeTestRule.onNodeWithTag("Card_1_1").performClick()
+        composeTestRule.waitForIdle()
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val expectedScoreText = context.getString(R.string.game_head_score, 100)
+        composeTestRule.onNodeWithText(expectedScoreText).assertIsDisplayed()
+        assertThat(board.cardsArray[0][0].value?.turned).isTrue()
+        assertThat(board.cardsArray[0][0].value?.coupled).isTrue()
+        assertThat(board.cardsArray[1][1].value?.turned).isTrue()
+        assertThat(board.cardsArray[1][1].value?.coupled).isTrue()
+    }
+
+    @Test
+    fun whenIncorrectPairIsClicked_cardsFlipBack() = runTest {
+        val board = GameBoard(2, 2).apply {
+            cardsArray[0][0].value = GameCard(id = 0, turned = false, coupled = false)
+            cardsArray[0][1].value = GameCard(id = 1, turned = false, coupled = false)
+            cardsArray[1][0].value = GameCard(id = 1, turned = false, coupled = false)
+            cardsArray[1][1].value = GameCard(id = 0, turned = false, coupled = false)
+        }
+        val fakeViewModel = FakeGameViewModel(
+            initialBoard = board,
+            initialIsBoardInitialized = mutableStateOf(true),
+            gameCardImages = listOf(R.drawable.img_c_01, R.drawable.img_c_02)
+        )
+        composeTestRule.setContent {
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
         }
 
-        // 3. Click a card
-        val x = 1
-        val y = 1
-        composeTestRule.onNodeWithTag("Card_${x}_${y}").performClick()
+        composeTestRule.onNodeWithTag("Card_0_0").performClick()
+        composeTestRule.onNodeWithTag("Card_0_1").performClick() // Incorrect pair
+        composeTestRule.waitForIdle()
 
-        // 4. Assert that the view model's method was called with the correct coordinates
-        assertThat(fakeViewModel.lastClickedX).isEqualTo(x)
-        assertThat(fakeViewModel.lastClickedY).isEqualTo(y)
+        assertThat(fakeViewModel.moves.value).isEqualTo(2)
+        assertThat(board.cardsArray[0][0].value?.turned).isFalse()
+        assertThat(board.cardsArray[0][1].value?.turned).isFalse()
+    }
+
+    @Test
+    fun whenAllPairsAreFound_gameIsWon() = runTest {
+        val board = GameBoard(2, 2).apply {
+            cardsArray[0][0].value = GameCard(id = 0, turned = false, coupled = false)
+            cardsArray[0][1].value = GameCard(id = 1, turned = false, coupled = false)
+            cardsArray[1][0].value = GameCard(id = 1, turned = false, coupled = false)
+            cardsArray[1][1].value = GameCard(id = 0, turned = false, coupled = false)
+        }
+        val fakeViewModel = FakeGameViewModel(
+            initialBoard = board,
+            initialIsBoardInitialized = mutableStateOf(true),
+            gameCardImages = listOf(R.drawable.img_c_01, R.drawable.img_c_02)
+        )
+        composeTestRule.setContent {
+            GameScreen(innerPadding = PaddingValues(0.dp), gameViewModel = fakeViewModel)
+        }
+
+        // Find all pairs
+        composeTestRule.onNodeWithTag("Card_0_0").performClick()
+        composeTestRule.onNodeWithTag("Card_1_1").performClick()
+        composeTestRule.onNodeWithTag("Card_0_1").performClick()
+        composeTestRule.onNodeWithTag("Card_1_0").performClick()
+        composeTestRule.waitForIdle()
+
+        // Assert that the game is won and the dialog is shown
+        assertThat(fakeViewModel.gameWon.value).isTrue()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        composeTestRule.onNodeWithText(context.getString(R.string.game_dialog_won_title)).assertIsDisplayed()
     }
 }
