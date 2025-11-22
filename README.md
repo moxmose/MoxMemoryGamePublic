@@ -4,7 +4,12 @@ A modern implementation of a classic memory game for Android, built entirely wit
 
 ## Screenshots
 
-*(Here you can add one or two screenshots of the app, like the main menu and the game screen.)*
+![Screenshot 1](Screenshot_1.png)
+![Screenshot 2](Screenshot_2.png)
+![Screenshot 3](Screenshot_3.png)
+![Screenshot 4](Screenshot_4.png)
+![Screenshot 5](Screenshot_5.png)
+![Screenshot 6](Screenshot_6.png)
 
 ## Tech Stack & Key Features
 
